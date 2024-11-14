@@ -3,7 +3,8 @@ from pathlib import Path
 
 # Set up paths
 # Bring Dockerfile into the same directory as docker-compose.yml
-DOCKER_COMPOSE_FILE = Path('/home/jacob/Desktop/Develeap/Project/docker-compose.yml')
+CURRENT_DIR = Path(__file__).parent
+DOCKER_COMPOSE_FILE = CURRENT_DIR / 'docker-compose.yml'
 
 def execute_docker_compose(commands):
     """Executes docker-compose commands using the specified compose file."""
