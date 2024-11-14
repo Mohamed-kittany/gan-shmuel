@@ -1,8 +1,6 @@
 services:
   ci_server:
     build: .
-      # context: /Gan-Shmuel/DevOps
-      # dockerfile: ./Dockerfile 
     privileged: true
     ports:
       - "8090:5000"
@@ -13,4 +11,4 @@ services:
 
 networks:
   production-network:
-    driver: bridge
+    driver: host
