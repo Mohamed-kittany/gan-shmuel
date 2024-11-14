@@ -1,14 +1,17 @@
 services:
-  ci_server:
-    build: .
+  ci:
+    build:
+      context: .
+      dockerfile: Dockerfile
     privileged: true
     ports:
       - "8090:5000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
     networks:
-      - production-network
-
+      - dev-network
 networks:
-  production-network:
-    driver: host
+  dev-network:
+    driver: bridge

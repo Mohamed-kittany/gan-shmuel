@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 import json
-import ci_pipeline  # ייבוא קובץ ה-CI
+from scripts.ci_pipeline import main
 
 app = Flask(__name__)
 
@@ -23,7 +23,7 @@ def github_webhook():
         if branch_name == 'main':
             print("CI pipeline triggered")
             try:
-                ci_pipeline.main()  # הפעלת צינור ה-CI
+                main()  # הפעלת צינור ה-CI
                 # החזרת סטטוס 200 במידה שהכל תקין
                 return jsonify({
                     "status": "success",
@@ -47,6 +47,5 @@ def github_webhook():
         return jsonify({"status": "error", "message": "Invalid payload or processing error"}), 400
 
 if __name__ == '__main__':
-
      app.run(host='0.0.0.0', port=5000)
 
