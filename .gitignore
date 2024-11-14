@@ -1,0 +1,8 @@
+# Directories
+venv*/
+__pycache__/
+tmp/
+
+# Files
+api-spec-for-all-teams.md
+README.md
