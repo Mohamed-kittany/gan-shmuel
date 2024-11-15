@@ -1,4 +1,3 @@
---
 -- Database: `billdb`
 --
 
@@ -18,9 +17,7 @@ CREATE TABLE IF NOT EXISTS `Provider` (
 ) ENGINE=MyISAM  AUTO_INCREMENT=10001 ;
 
 CREATE TABLE IF NOT EXISTS `Rates` (
-  `product_id` varchar(50) NOT NULL,# *.sql
-*.sqlite3
-*.db
+  `product_id` varchar(50) NOT NULL,
   `rate` int(11) DEFAULT 0,
   `scope` varchar(50) DEFAULT NULL,
   FOREIGN KEY (scope) REFERENCES `Provider`(`id`)
