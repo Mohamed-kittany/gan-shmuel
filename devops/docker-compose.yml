@@ -3,7 +3,7 @@ services:
     build: .
     privileged: true
     ports:
-      - "8090:5000"
+      - "8080:5000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
@@ -11,4 +11,4 @@ services:
 
 networks:
   production-network:
-    driver: host
+    driver: bridge

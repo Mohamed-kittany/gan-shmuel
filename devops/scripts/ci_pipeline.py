@@ -9,7 +9,7 @@ DOCKER_COMPOSE_FILE = CURRENT_DIR / 'docker-compose.yml'
 def execute_docker_compose(commands):
     """Executes docker-compose commands using the specified compose file."""
     try:
-        subprocess.run(['docker', 'compose', '-f', str(DOCKER_COMPOSE_FILE), *commands], check=True)
+        subprocess.run(['docker-compose', '-f', str(DOCKER_COMPOSE_FILE), *commands], check=True)
         print(f"Successfully executed: docker compose {' '.join(commands)}")
     except subprocess.CalledProcessError as e:
         print(f"Error executing docker compose {' '.join(commands)}: {e}")
