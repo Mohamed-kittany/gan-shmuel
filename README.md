@@ -1,2 +1,2 @@
 # gan-shmuel
-Welcome
+Welcome to the project!!!
