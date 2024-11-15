@@ -20,7 +20,7 @@ def github_webhook():
         print(f"Commit email: {commit_owner_email}")
         
         # אם מדובר בסניף 'main'
-        if branch_name == 'main':
+        if branch_name == 'master':
             print("CI pipeline triggered")
             try:
                 ci_pipeline.main()  # הפעלת צינור ה-CI
