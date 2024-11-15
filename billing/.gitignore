@@ -15,7 +15,7 @@ gan_shmuel/
 *.err
 
 # MySQL and database files
-*.sql
+# *.sql
 *.sqlite3
 *.db
 
