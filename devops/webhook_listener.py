@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import json
 from scripts.ci_pipeline import main
+from scripts.email_service import send_email
 
 app = Flask(__name__)
 
@@ -23,8 +24,13 @@ def github_webhook():
         if branch_name == 'main':
             print("CI pipeline triggered")
             try:
-                main()  # הפעלת צינור ה-CI
-                # החזרת סטטוס 200 במידה שהכל תקין
+                main()  
+                send_email(
+                    subject="CI Pipeline Success",
+                    body=f"CI pipeline executed successfully on commit by {author}.\n\nCommit email: {commit_owner_email}",
+                    #to_addresses=[commit_owner_email, "ayalm1357@gmail.com"]
+                    to_addresses=["ayalm1357@gmail.com", "ayalm1357@gmail.com"]
+                )
                 return jsonify({
                     "status": "success",
                     "branch": branch_name,
@@ -34,6 +40,11 @@ def github_webhook():
                 }), 200
             except Exception as e:
                 print(f"CI pipeline failed: {e}")
+                send_email(
+                    subject="CI Pipeline Failed",
+                    body=f"CI pipeline failed on commit by {author}.\n\nError: {str(e)}",
+                    to_addresses=["ayalm1357@gmail.com", "ayalm1357@gmail.com"]
+                )
                 return jsonify({"status": "error", "message": str(e)}), 500
         else:
             # אם הסניף לא main, תחזיר תשובה מתאימה
