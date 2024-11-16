@@ -11,8 +11,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . /app/
 
-# Expose the port your Flask app runs on
-EXPOSE 5000
+# Define the network port the container will listen on at runtime
+EXPOSE 8080
 
 # Start the application
 ENTRYPOINT ["python", "app.py"]
