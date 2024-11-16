@@ -10,6 +10,7 @@ venv/
 gan_shmuel/
 
 # Logs
+logs/
 *.log
 *.out
 *.err
