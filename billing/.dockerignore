@@ -1,20 +1,31 @@
-# Ignore Python cache and virtual environments
-__pycache__
+# Ignore Python cache and compiled files
+__pycache__/
 *.pyc
+*.pyo
+
+# Ignore virtual environments
 venv/
+env/
+
+# Ignore Gan Shmuel directory
 gan_shmuel/
 
 # Ignore Git files
-.git
+.git/
 .gitignore
 
-# Ignore environment variables and credentials
+# Ignore sensitive environment files
 .env
 
-# Ignore log files and other temporary files
+# Ignore log files
 *.log
 *.out
 *.err
+
+# Ignore IDE/editor configuration files
+*.vscode/
+*.idea/
+*.swp
 
 # Ignore database files
 *.sql
@@ -24,3 +35,7 @@ gan_shmuel/
 # Ignore OS-specific files
 .DS_Store
 Thumbs.db
+
+# Ignore temporary or build artifacts
+*.bak
+*.tmp
