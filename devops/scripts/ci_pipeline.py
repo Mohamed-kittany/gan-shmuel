@@ -71,7 +71,7 @@ def copy_env_file(service_dir, environment):
         raise ValueError(f"Unknown environment: {environment}")
     
     # Define the destination path for the .env file
-    target_env_path = service_dir / '.env'
+    target_env_path = service_dir / f'.env.{environment}'
     
     # Copy the environment file to the target location
     logger.info(f"Copying {env_file} to {target_env_path}...")

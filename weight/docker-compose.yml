@@ -18,8 +18,8 @@ services:
     volumes:
       - /Users/ayala/Downloads/dev/gan-shmuel/weight/db/weightdb.sql:/docker-entrypoint-initdb.d/billingdb.sql  # This is only needed in test, not prod
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${WEIGHT_MYSQL_DATABASE_PASSWORD}
+      MYSQL_DATABASE: ${BILLING_MYSQL_DATABASE_DB}
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
