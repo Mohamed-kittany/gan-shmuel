@@ -1,14 +1,20 @@
-from .provider import get_providers
-# from .truck import truck_bp
-# from .rate import rate_bp
-from .health_check import health_check
-# from .bill import bill_bp
+from .health import health_bp
+from .provider import provider_bp
+from .truck import truck_bp
+from .rate import rate_bp
+from .bill import billing_bp
 
 def register_blueprints(app):
-    app.register_blueprint(get_providers)
-    # app.register_blueprint(truck_bp)
-    # app.register_blueprint(rate_bp)
-    app.register_blueprint(health_check)
-    # app.register_blueprint(bill_bp)
-
-
+    """
+    Registers all the blueprints with the Flask app and applies a common prefix.
+    """
+    blueprints = [
+        health_bp,
+        provider_bp,
+        truck_bp,
+        rate_bp,
+        billing_bp
+    ]
+    
+    for bp in blueprints:
+        app.register_blueprint(bp, url_prefix='/api')
