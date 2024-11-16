@@ -28,9 +28,7 @@ gan_shmuel/
 *.swp
 
 # Ignore database files
-*.sql
-*.sqlite3
-*.db
+database/
 
 # Ignore OS-specific files
 .DS_Store
@@ -39,3 +37,7 @@ Thumbs.db
 # Ignore temporary or build artifacts
 *.bak
 *.tmp
+
+# Ignore Docker configuration files
+.dockerignore
+docker-compose.yml
