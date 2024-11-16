@@ -1,0 +1,23 @@
+services:
+  backend:
+    build: .
+    ports:
+      - "8085:5000"
+    depends_on:
+      - db
+    env_file: 
+      - .env
+
+  db:
+    image: mysql:9.0.1
+    ports:
+      - "3333:3306"
+    volumes:
+      - /Users/ayala/Downloads/dev/gan-shmuel/billing/database/billingdb.sql:/docker-entrypoint-initdb.d/billingdb.sql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_DATABASE_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE_DB}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
