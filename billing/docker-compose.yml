@@ -1,0 +1,23 @@
+services:
+  backend:
+    build: .
+    ports:
+      - "8080:5000"
+    depends_on:
+      - db
+    env_file: 
+      - .env
+
+  db:
+    image: mysql:9.0.1
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./database/billingdb.sql:/docker-entrypoint-initdb.d/billingdb.sql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_DATABASE_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE_DB}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5

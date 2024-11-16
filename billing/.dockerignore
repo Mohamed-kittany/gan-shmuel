@@ -1,0 +1,43 @@
+# Ignore Python cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore virtual environments
+venv/
+env/
+
+# Ignore Gan Shmuel directory
+gan_shmuel/
+
+# Ignore Git files
+.git/
+.gitignore
+
+# Ignore sensitive environment files
+.env
+
+# Ignore log files
+*.log
+*.out
+*.err
+
+# Ignore IDE/editor configuration files
+*.vscode/
+*.idea/
+*.swp
+
+# Ignore database files
+database/
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore temporary or build artifacts
+*.bak
+*.tmp
+
+# Ignore Docker configuration files
+.dockerignore
+docker-compose.yml
