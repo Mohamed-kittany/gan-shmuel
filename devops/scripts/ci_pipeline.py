@@ -82,25 +82,82 @@ def execute_docker_compose(commands, service_dir):
     """Executes docker-compose commands using the specified compose file in a given directory."""
     try:
         logger.info(f"Running: docker-compose -f {str(service_dir / 'docker-compose.yml')} {' '.join(commands)}")
-        subprocess.run(['docker-compose', '-f', str(service_dir / 'docker-compose.yml')] + commands, check=True)
+        
+        # Run with timeout to avoid hanging
+        process = subprocess.run(
+            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml')] + commands,
+            check=True,
+            timeout=300  # 5 minute timeout
+        )
+        
         logger.info(f"Successfully executed: {' '.join(commands)} in {service_dir}")
+    except subprocess.TimeoutExpired:
+        logger.error(f"Docker compose command timed out. Cleaning up...")
+        # Force cleanup on timeout
+        cleanup_containers(service_dir)
+        raise
     except subprocess.CalledProcessError as e:
         logger.error(f"Error executing docker compose {' '.join(commands)} in {service_dir}: {e}")
+        # Cleanup on error
+        cleanup_containers(service_dir)
         raise
+
+def cleanup_containers(service_dir):
+    """Clean up containers and networks created by docker-compose."""
+    try:
+        logger.info("Cleaning up containers and networks...")
+        subprocess.run(
+            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'down', '--volumes', '--remove-orphans'],
+            check=False,  # Don't raise exception if cleanup fails
+            timeout=60
+        )
+    except Exception as e:
+        logger.error(f"Error during cleanup: {e}")
 
 def build_and_deploy(service_dir, environment):
     """Build Docker images and deploy containers for a given service directory."""
-    # Step 1: Copy the correct .env file based on the environment
-    copy_env_file(environment)
-    
-    # Step 2: Build Docker images from the updated Dockerfile
-    logger.info(f"Building Docker containers for {service_dir}...")
-    execute_docker_compose(['build', '--no-cache'], service_dir)
+    try:
+        # Step 1: Copy the correct .env file based on the environment
+        copy_env_file(environment)
+        
+        # Step 2: Build Docker images from the updated Dockerfile
+        logger.info(f"Building Docker containers for {service_dir}...")
+        execute_docker_compose(['build', '--no-cache'], service_dir)
 
-    # Step 3: Start containers and run them
-    logger.info(f"Starting Docker containers for {service_dir}...")
-    execute_docker_compose(['up', '--build'], service_dir)
+        # Step 3: Start containers and run them
+        logger.info(f"Starting Docker containers for {service_dir}...")
+        execute_docker_compose(['up', '--build', '-d'], service_dir)  # Added -d for detached mode
+        
+        # Step 4: Check container health
+        check_container_health(service_dir)
+        
+    except Exception as e:
+        logger.error(f"Build and deploy failed for {service_dir}: {e}")
+        cleanup_containers(service_dir)
+        raise
 
+def check_container_health(service_dir):
+    """Check if all containers are healthy and running."""
+    try:
+        result = subprocess.run(
+            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'ps'],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        
+        if 'Exit' in result.stdout:
+            logger.error("One or more containers have exited unexpectedly")
+            # Get container logs for debugging
+            subprocess.run(
+                ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'logs'],
+                check=False
+            )
+            raise RuntimeError("Container startup failed")
+            
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error checking container health: {e}")
+        raise
 def main():
     """Main function to process both billing and weight services."""
     environment = os.getenv('ENV', 'test')  # Default to 'test' if not set
