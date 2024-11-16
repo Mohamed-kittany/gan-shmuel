@@ -1,23 +1,36 @@
+version: "3.8"
+
 services:
-  backend:
+  weight-backend:
     build: .
     ports:
-      - "8080:5000"
+      - "8085:5000"  # Expose port only for production
     depends_on:
-      - db
+      - weight-db
     env_file: 
-      - .env
+      - .env.${ENV}  # Use environment-specific .env file
+    networks:
+      - ${NETWORK_NAME}  # Network based on environment
+    restart: always  
 
-  db:
+  weight-db:
     image: mysql:9.0.1
     ports:
-      - "3306:3306"
+      - "3333:3306"  # Expose port only for production
     volumes:
-      - /Users/ayala/Downloads/dev/gan-shmuel/billing/database/billingdb.sql:/docker-entrypoint-initdb.d/billingdb.sql
+      - /Users/ayala/Downloads/dev/gan-shmuel/billing/database/billingdb.sql:/docker-entrypoint-initdb.d/billingdb.sql  # Only needed in test
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_DATABASE_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE_DB}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       retries: 5
+    networks:
+      - ${NETWORK_NAME}  # Network based on environment
+
+networks:
+  test-network:
+    driver: bridge
+  prod-network:
+    driver: bridge

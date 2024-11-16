@@ -6,6 +6,11 @@ import os
 
 app = Flask(__name__)
 
+
+@app.route('/health', methods=['POST'])
+def health():
+    return 'ok'
+
 @app.route('/github-webhook', methods=['POST'])
 def github_webhook():
     # Get the payload of the webhook request
@@ -22,10 +27,8 @@ def github_webhook():
         print(f"Commit email: {commit_owner_email}")
         
         # Determine environment based on branch name
-        if branch_name == 'master':
-            environment = 'prod'  # Use production environment for 'master'
-        elif branch_name == 'billing' or branch_name == 'weight':
-            environment = 'test'  # Use test environment for other branches
+        if branch_name == 'master' or branch_name == 'billing' or branch_name == 'weight':
+            environment = 'test' 
 
         print(f"Running CI pipeline for environment: {environment}")
         
@@ -33,8 +36,18 @@ def github_webhook():
         try:
             # Set environment variable to control which .env file to load
             os.environ['ENV'] = environment
-            main()  # Trigger the pipeline with the chosen environment
+            main()  # Trigger the pipeline for the test environment
             
+            # Run tests after deploying to the test environment
+            if not check_tests_passed():
+                raise Exception("Tests failed in the test environment")
+
+            # Clean up the test environment after successful tests
+            cleanup_test_environment()
+            
+            # Now that tests passed, proceed to deploy to production
+            os.environ['ENV'] = 'prod'  # Switch environment to production
+            main()  
             # Send success email
             send_email(
                 subject="CI Pipeline Success",

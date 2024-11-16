@@ -13,6 +13,12 @@ services:
       - DOCKER_HOST=unix:///var/run/docker.sock
     networks:
       - dev-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]  
+      interval: 30s  
+      retries: 3      
+      start_period: 10s  
+      timeout: 5s 
 networks:
   dev-network:
     driver: bridge
