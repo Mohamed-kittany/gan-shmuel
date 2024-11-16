@@ -1,27 +1,23 @@
-# docker-compose.yml
-version: '3.8'
-
 services:
-  web:
+  backend:
     build: .
     ports:
       - "5000:5000"
-    # TESTING
-    network_mode: host  # Use the host network
-    environment:
-      - SECRET_KEY=${SECRET_KEY}
-      - MYSQL_DATABASE_HOST=${MYSQL_DATABASE_HOST}
-      - MYSQL_DATABASE_USER=${MYSQL_DATABASE_USER}
-      - MYSQL_DATABASE_PASSWORD=${MYSQL_DATABASE_PASSWORD}
-      - MYSQL_DATABASE_DB=${MYSQL_DATABASE_DB}
     depends_on:
       - db
+    env_file: 
+      - .env
 
   db:
     image: mysql:9.0.1
-    network_mode: host  # Use the host network
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./database/billingdb.sql:/docker-entrypoint-initdb.d/billingdb.sql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_DATABASE_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE_DB}
-    volumes:
-      - ./billingdb.sql:/docker-entrypoint-initdb.d/billingdb.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
