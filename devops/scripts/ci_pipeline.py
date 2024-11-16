@@ -43,15 +43,14 @@ def pull_latest_code():
     """Pull the latest code from the GitHub repository."""
     logger.info("Pulling latest code from GitHub...")
     try:
-        # Try to checkout mohamed branch
         try:
-            subprocess.run(['git', 'checkout', 'mohamed'], cwd=REPO_DIR, check=True, capture_output=True)
+            subprocess.run(['git', 'checkout', 'ayala'], cwd=REPO_DIR, check=True, capture_output=True)
         except subprocess.CalledProcessError:
             # If branch doesn't exist, create it tracking remote
-            subprocess.run(['git', 'checkout', '-b', 'mohamed', 'origin/mohamed'], cwd=REPO_DIR, check=True)
+            subprocess.run(['git', 'checkout', '-b', 'ayala', 'origin/ayala'], cwd=REPO_DIR, check=True)
         
         # Ensure we're tracking the remote branch
-        subprocess.run(['git', 'branch', '--set-upstream-to=origin/mohamed', 'mohamed'], cwd=REPO_DIR, check=True)
+        subprocess.run(['git', 'branch', '--set-upstream-to=origin/ayala', 'ayala'], cwd=REPO_DIR, check=True)
         
         # Pull latest changes
         subprocess.run(['git', 'pull'], cwd=REPO_DIR, check=True)

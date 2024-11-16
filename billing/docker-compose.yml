@@ -13,7 +13,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - ./database/billingdb.sql:/docker-entrypoint-initdb.d/billingdb.sql
+      - /Users/ayala/Downloads/dev/gan-shmuel/billing/database/billingdb.sql:/docker-entrypoint-initdb.d/billingdb.sql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_DATABASE_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE_DB}
