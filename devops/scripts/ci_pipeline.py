@@ -1,87 +1,123 @@
-from python_on_whales import docker
-import logging
-import os
 import subprocess
+import os
+import logging
 from pathlib import Path
+from shutil import copyfile
 
-# Configure logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+# Set up logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def find_project_root():
-    """Find the project root directory (where docker-compose.yml is located)"""
-    current = Path.cwd()
-    while current != current.parent:
-        # Look for docker-compose.yml in the /app/scripts folder (since it's mounted there)
-        if (current / 'docker-compose.yml').exists() or (current / 'scripts/docker-compose.yml').exists():
-            return current
-        current = current.parent
-    raise FileNotFoundError("Could not find docker-compose.yml in any parent directory")
+# Get the path of the current directory
+CURRENT_DIR = Path(__file__).parent
+REPO_DIR = CURRENT_DIR / "gan-shmuel"  # Path to the cloned repository
+def clone_repository():
+    """Clones the Git repository if it doesn't exist locally or initializes it if mounted."""
+    if not REPO_DIR.exists():
+        logger.info("Repository not found. Cloning repository into 'gan-shmuel' folder...")
+        try:
+            subprocess.run(['git', 'clone', 'https://github.com/AM8151/gan-shmuel.git', str(REPO_DIR)], check=True)
+            logger.info(f"Successfully cloned the repository into {REPO_DIR}")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to clone the repository: {e}")
+            raise
+    else:
+        logger.info("Repository directory exists. Checking Git status...")
+        try:
+            # Check if it's a git repository
+            subprocess.run(['git', 'status'], cwd=REPO_DIR, check=True, capture_output=True)
+            logger.info("Git repository found. Proceeding with pulling latest changes.")
+        except subprocess.CalledProcessError:
+            logger.info("Directory exists but not a Git repository. Initializing...")
+            try:
+                # Initialize git and set up remote
+                subprocess.run(['git', 'init'], cwd=REPO_DIR, check=True)
+                subprocess.run(['git', 'remote', 'add', 'origin', 'https://github.com/AM8151/gan-shmuel.git'], cwd=REPO_DIR, check=True)
+                subprocess.run(['git', 'fetch'], cwd=REPO_DIR, check=True)
+                logger.info("Git repository initialized successfully")
+            except subprocess.CalledProcessError as e:
+                logger.error(f"Failed to initialize git repository: {e}")
+                raise
 
-def execute_docker_compose(commands):
-    """
-    Executes docker-compose commands with proper build context
-    """
+def pull_latest_code():
+    """Pull the latest code from the GitHub repository."""
+    logger.info("Pulling latest code from GitHub...")
     try:
-        # Explicitly set the working directory to /app/scripts
-        project_root = Path("/app/scripts")  # Directly use the path where docker-compose.yml is located
-        os.chdir(project_root)
-
-        logger.info(f"Project root directory: {project_root}")
-        logger.info(f"Current working directory: {os.getcwd()}")
-        logger.info(f"Directory contents: {os.listdir()}")
-
-        # Verify required files exist
-        required_files = ['docker-compose.yml', 'Dockerfile']
-        for file in required_files:
-            file_path = project_root / file
-            if not file_path.exists():
-                raise FileNotFoundError(f"Required file {file} not found at {file_path}")
-            logger.info(f"Found {file} at {file_path}")
-
-        # Use subprocess for better control and error handling
-        cmd = ['docker', 'compose'] + commands
-        logger.info(f"Executing command: {' '.join(cmd)}")
-
-        result = subprocess.run(
-            cmd,
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            cwd=str(project_root)  
-        )
-
-        logger.info("Command stdout:")
-        logger.info(result.stdout)
-
-        if result.stderr:
-            logger.warning("Command stderr:")
-            logger.warning(result.stderr)
-
+        # Try to checkout mohamed branch
+        try:
+            subprocess.run(['git', 'checkout', 'mohamed'], cwd=REPO_DIR, check=True, capture_output=True)
+        except subprocess.CalledProcessError:
+            # If branch doesn't exist, create it tracking remote
+            subprocess.run(['git', 'checkout', '-b', 'mohamed', 'origin/mohamed'], cwd=REPO_DIR, check=True)
+        
+        # Ensure we're tracking the remote branch
+        subprocess.run(['git', 'branch', '--set-upstream-to=origin/mohamed', 'mohamed'], cwd=REPO_DIR, check=True)
+        
+        # Pull latest changes
+        subprocess.run(['git', 'pull'], cwd=REPO_DIR, check=True)
+        logger.info("Successfully pulled latest code")
     except subprocess.CalledProcessError as e:
-        logger.error(f"Command failed with return code {e.returncode}")
-        logger.error(f"Command stdout: {e.stdout}")
-        logger.error(f"Command stderr: {e.stderr}")
-        raise Exception(f"Docker compose command failed: {e.stderr}")
-    except Exception as e:
-        logger.error(f"Error executing docker compose command: {e}")
+        logger.error(f"Failed to pull latest code: {e}")
+        raise
+def copy_env_file(environment):
+    """Copy the correct .env file based on the environment."""
+    env_file_map = {
+        'prod': '/app/.env.prod',   # Path to the prod environment file
+        'test': '/app/.env.test',   # Path to the test environment file
+    }
+    
+    # Choose the correct env file based on the environment
+    env_file = env_file_map.get(environment)
+    if not env_file:
+        raise ValueError(f"Unknown environment: {environment}")
+    
+    # Define the destination path for the .env file
+    target_env_path = REPO_DIR / 'billing' / '.env'
+    
+    # Copy the environment file to the target location
+    logger.info(f"Copying {env_file} to {target_env_path}...")
+    copyfile(env_file, target_env_path)
+    logger.info(f"Successfully copied {env_file} to {target_env_path}")
+
+def execute_docker_compose(commands, service_dir):
+    """Executes docker-compose commands using the specified compose file in a given directory."""
+    try:
+        logger.info(f"Running: docker-compose -f {str(service_dir / 'docker-compose.yml')} {' '.join(commands)}")
+        subprocess.run(['docker-compose', '-f', str(service_dir / 'docker-compose.yml')] + commands, check=True)
+        logger.info(f"Successfully executed: {' '.join(commands)} in {service_dir}")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error executing docker compose {' '.join(commands)} in {service_dir}: {e}")
         raise
 
+def build_and_deploy(service_dir, environment):
+    """Build Docker images and deploy containers for a given service directory."""
+    # Step 1: Copy the correct .env file based on the environment
+    copy_env_file(environment)
+    
+    # Step 2: Build Docker images from the updated Dockerfile
+    logger.info(f"Building Docker containers for {service_dir}...")
+    execute_docker_compose(['build', '--no-cache'], service_dir)
+
+    # Step 3: Start containers and run them
+    logger.info(f"Starting Docker containers for {service_dir}...")
+    execute_docker_compose(['up', '--build'], service_dir)
+
 def main():
+    """Main function to process both billing and weight services."""
+    environment = os.getenv('ENV', 'test')  # Default to 'test' if not set
+    
     try:
-        logger.info("Starting CI pipeline execution")
+        clone_repository()
+        pull_latest_code() 
 
-        # Execute docker compose commands
-        execute_docker_compose(['up', '--build', '--detach'])
+        # Process both billing and weight services with the correct environment
+        build_and_deploy(REPO_DIR / 'billing', environment)
+        build_and_deploy(REPO_DIR / 'weight', environment)
 
-        logger.info("CI pipeline completed successfully")
-
+        logger.info(f"CI pipeline for both services completed successfully in {environment} environment.")
+    
     except Exception as e:
-        logger.error(f"CI pipeline failed: {e}")
+        logger.error(f"CI pipeline failed for one or both services: {e}")
         raise
 
 if __name__ == "__main__":
