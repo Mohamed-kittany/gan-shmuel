@@ -29,7 +29,7 @@ The **Gan Shmuel System** consists of three main microservices that work togethe
 
 ## **Architecture Overview**
 
-![System Architecture](images/architecture.png "API Architecture")
+![System Architecture](images/architecture.jpeg "API Architecture")
 
 ---
 
