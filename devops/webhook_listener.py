@@ -70,7 +70,7 @@ def github_webhook():
             #     raise Exception("Tests failed in the test environment")
 
             # Clean up the test environment after successful tests
-            cleanup_test_environment()
+            # cleanup_test_environment()
             
             # Now that tests passed, proceed to deploy to production
             os.environ['ENV'] = 'prod'  # Switch environment to production
