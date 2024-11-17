@@ -19,6 +19,23 @@ services:
       retries: 3      
       start_period: 10s  
       timeout: 5s 
+  splunk:
+    image: splunk/splunk:latest
+    container_name: splunk
+    environment:
+      - SPLUNK_START_ARGS=--accept-license
+      - SPLUNK_PASSWORD=changeme  
+      - SPLUNK_HTTP_EVENT_COLLECTOR=1 
+      - SPLUNK_HEC_TOKEN=your_hec_token  
+    ports:
+      - "8088:8088"  # Splunk HTTP Event Collector (HEC) port
+      - "8000:8086"  # Splunk Web UI port
+      - "9997:9997"  # Splunk Forwarding port (for forwarders)
+    volumes:
+      - splunk-data:/opt/splunk/var
+    networks:
+      - dev-network
+    restart: always
 networks:
   dev-network:
     driver: bridge
