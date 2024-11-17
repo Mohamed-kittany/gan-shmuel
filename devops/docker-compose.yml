@@ -1,14 +1,43 @@
 services:
-  ci_server:
-    build: .
+  ci:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # depends_on:
+    #   splunk:
+    #     condition: service_healthy
     privileged: true
     ports:
       - "8080:5000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - /app/dev/gan-shmuel:/app/gan-shmuel
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
     networks:
-      - production-network
+      - dev-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      timeout: 5s
+    logging:
+      driver: "splunk"
+      options:
+        splunk-token: "20031e81-9335-4eb5-8b5c-2728193f80a5"
+        splunk-url: "http://splunk:8088"
+        splunk-verify-connection: "false"
+        splunk-format: "raw"
+        splunk-index: "main"
+        splunk-source: "ci-service"
+        splunk-sourcetype: "docker"
 
 networks:
-  production-network:
+  dev-network:
+    name: dev-network
     driver: bridge
+
+volumes:
+  splunk-data:
+    driver: local
