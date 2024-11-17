@@ -25,7 +25,7 @@ services:
     logging:
       driver: "splunk"
       options:
-        splunk-token: "9420d629-935e-46b7-8c65-73aef6ee6e6d"
+        splunk-token: "20031e81-9335-4eb5-8b5c-2728193f80a5"
         splunk-url: "http://splunk:8088"
         splunk-verify-connection: "false"
         splunk-format: "raw"
