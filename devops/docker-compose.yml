@@ -1,36 +1,24 @@
-version: "3.8"
-
 services:
-  weight-backend:
-    build: .
+  ci:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    privileged: true
     ports:
-      - "8085:5000"  # Expose port only for production
-    depends_on:
-      - weight-db
-    env_file: 
-      - .env.${ENV}  # Use environment-specific .env file
-    networks:
-      - ${NETWORK_NAME}  # Network based on environment
-    restart: always  
-
-  weight-db:
-    image: mysql:9.0.1
-    ports:
-      - "3333:3306"  # Expose port only for production
+      - "8090:5000"
     volumes:
-      - /Users/ayala/Downloads/dev/gan-shmuel/weight/db/weightdb.sql:/docker-entrypoint-initdb.d/billingdb.sql  # Only needed in test
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /Users/ayala/Downloads/dev/gan-shmuel:/app/gan-shmuel
     environment:
-      MYSQL_ROOT_PASSWORD: ${BILLING_MYSQL_DATABASE_PASSWORD}
-      MYSQL_DATABASE: ${BILLING_MYSQL_DATABASE_DB}
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      retries: 5
+      - DOCKER_HOST=unix:///var/run/docker.sock
     networks:
-      - ${NETWORK_NAME}  # Network based on environment
-
+      - dev-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]  
+      interval: 30s  
+      retries: 3      
+      start_period: 10s  
+      timeout: 5s 
 networks:
-  test-network:
-    driver: bridge
-  prod-network:
+  dev-network:
     driver: bridge

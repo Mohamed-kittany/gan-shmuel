@@ -1,24 +1,25 @@
-version: "3.8"
-
 services:
-  weight-backend:
-    build: .
+  # Billing Backend Service
+  billing-backend:
+    build:
+      context: ./path/to/billing-backend  # Path to the billing-backend Dockerfile
     ports:
-      - "8080:5000"  # Expose port only for production
+      - "${BILLING_BACKEND_PORT:-8085}:5000"  # Expose port only in prod (8085 or default)
     depends_on:
-      - weight-db
-    env_file: 
-      - .env.${ENV}  # Use environment-specific .env file
+      - billing-db
+    env_file:
+      - .env.${ENV}  # Environment-specific .env file (e.g., .env.test or .env.prod)
     networks:
-      - ${NETWORK_NAME}  # Network based on environment
-    restart: always  
+      - ${NETWORK_NAME:-test-network}  # Default to test-network in test, prod-network in prod
+    restart: always
 
-  weight-db:
+  # Billing Database Service
+  billing-db:
     image: mysql:9.0.1
     ports:
-      - "3306:3306"  # Expose port only for production
+      - "${BILLING_DB_PORT:-3307}:3306"  # Expose port only in prod (3307 or default)
     volumes:
-      - /Users/ayala/Downloads/dev/gan-shmuel/billing/database/billingdb.sql:/docker-entrypoint-initdb.d/billingdb.sql  # Only needed in test
+      - /path/to/billingdb.sql:/docker-entrypoint-initdb.d/billingdb.sql  # Only needed in test, not prod
     environment:
       MYSQL_ROOT_PASSWORD: ${BILLING_MYSQL_DATABASE_PASSWORD}
       MYSQL_DATABASE: ${BILLING_MYSQL_DATABASE_DB}
@@ -27,7 +28,7 @@ services:
       interval: 10s
       retries: 5
     networks:
-      - ${NETWORK_NAME}  # Network based on environment
+      - ${NETWORK_NAME:-test-network}  # Default to test-network in test, prod-network in prod
 
 networks:
   test-network:
