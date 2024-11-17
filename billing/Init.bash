@@ -62,7 +62,5 @@ else
     exit 1
 fi
 
-
-
 # Return to the original directory
 cd ..
