@@ -73,8 +73,8 @@ def github_webhook():
             # cleanup_test_environment()
             
             # Now that tests passed, proceed to deploy to production
-            os.environ['ENV'] = 'prod'  # Switch environment to production
-            main()
+            # os.environ['ENV'] = 'prod'  # Switch environment to production
+            # main()
             
             # Log success and send success email
             logger.info(f"CI pipeline executed successfully for commit by {author} to branch {branch_name}")
