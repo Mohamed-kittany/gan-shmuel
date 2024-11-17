@@ -1,8 +1,7 @@
 services:
   # Weight Backend Service
   weight-backend:
-    build:
-      context: ./path/to/weight-backend  # Path to the weight-backend Dockerfile
+    build: . 
     ports:
       - "${WEIGHT_BACKEND_PORT:-8080}:5000"  # Expose port only in prod (8080 or default)
     depends_on:

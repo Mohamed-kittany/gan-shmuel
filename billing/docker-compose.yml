@@ -1,8 +1,7 @@
 services:
   # Billing Backend Service
   billing-backend:
-    build:
-      context: ./path/to/billing-backend  # Path to the billing-backend Dockerfile
+    build: .
     ports:
       - "${BILLING_BACKEND_PORT:-8085}:5000"  # Expose port only in prod (8085 or default)
     depends_on:
