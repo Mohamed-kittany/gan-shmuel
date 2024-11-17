@@ -3,18 +3,19 @@ import json
 from ci_pipeline import main
 from email_service import send_email
 import os
+from logging_config import logger
 
 app = Flask(__name__)
 
-
 @app.route('/health', methods=['POST'])
 def health():
+    logger.info("Health check endpoint accessed")
     return 'ok'
 
 @app.route('/github-webhook', methods=['POST'])
 def github_webhook():
-    # Get the payload of the webhook request
     try:
+        # Get the payload of the webhook request
         payload = request.json  # Direct access to the JSON payload
         branch_name = payload['ref'].split('/')[-1]  # Get the branch name from the 'ref' field
         author = payload['sender']['login']  # GitHub username of the author
@@ -22,15 +23,18 @@ def github_webhook():
         commit_owner_email = commit_info['author']['email']  # Commit author's email
         time = commit_info['timestamp']  # Commit timestamp
 
-        # Print for debugging
-        print(f"Commit by {author} to branch {branch_name} at {time}")
-        print(f"Commit email: {commit_owner_email}")
+        # Log payload details
+        logger.info(f"Webhook received: Commit by {author} to branch {branch_name} at {time}")
+        logger.info(f"Commit email: {commit_owner_email}")
         
         # Determine environment based on branch name
-        if branch_name == 'master' or branch_name == 'billing' or branch_name == 'weight':
-            environment = 'test' 
+        if branch_name in ['master', 'billing', 'weight']:
+            environment = 'test'
+        else:
+            logger.warning(f"Unknown branch: {branch_name}")
+            return jsonify({"status": "error", "message": "Unknown branch"}), 400
 
-        print(f"Running CI pipeline for environment: {environment}")
+        logger.info(f"Running CI pipeline for environment: {environment}")
         
         # Call the CI pipeline with the appropriate environment
         try:
@@ -47,8 +51,10 @@ def github_webhook():
             
             # Now that tests passed, proceed to deploy to production
             os.environ['ENV'] = 'prod'  # Switch environment to production
-            main()  
-            # Send success email
+            main()
+            
+            # Log success and send success email
+            logger.info(f"CI pipeline executed successfully for commit by {author} to branch {branch_name}")
             send_email(
                 subject="CI Pipeline Success",
                 body=f"CI pipeline executed successfully on commit by {author}.\n\nCommit email: {commit_owner_email}",
@@ -64,7 +70,8 @@ def github_webhook():
                 "environment": environment
             }), 200
         except Exception as e:
-            print(f"CI pipeline failed: {e}")
+            logger.error(f"CI pipeline failed: {e}")
+            
             # Send failure email
             send_email(
                 subject="CI Pipeline Failed",
@@ -73,8 +80,9 @@ def github_webhook():
             )
             return jsonify({"status": "error", "message": str(e)}), 500
     except Exception as e:
-        print(f"Error processing webhook: {e}")
+        logger.error(f"Error processing webhook: {e}")
         return jsonify({"status": "error", "message": "Invalid payload or processing error"}), 400
 
 if __name__ == '__main__':
-     app.run(host='0.0.0.0', port=5000)
+    logger.info("Starting Flask application")
+    app.run(host='0.0.0.0', port=5000)

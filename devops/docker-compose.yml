@@ -1,8 +1,40 @@
 services:
+  splunk:
+    image: splunk/splunk:latest
+    container_name: splunk
+    hostname: splunk
+    environment:
+      - SPLUNK_START_ARGS=--accept-license
+      - SPLUNK_PASSWORD=changeme
+      - SPLUNK_HTTP_EVENT_COLLECTOR=1
+      - SPLUNK_HEC_TOKEN=your_hec_token
+      - SPLUNK_HEC_ENABLE=1  
+      - SPLUNK_HEC_SSL=false 
+      - SPLUNK_HEC_PORT=8088 
+    ports:
+      - "8088:8088"
+      - "8086:8000"
+      - "9997:9997"
+    volumes:
+      - splunk-data:/opt/splunk/var
+      - ./splunk-config:/opt/splunk/etc
+    networks:
+      - dev-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/en-US/account/login"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 60s
+
   ci:
     build:
       context: .
       dockerfile: Dockerfile
+    depends_on:
+      splunk:
+        condition: service_healthy
     privileged: true
     ports:
       - "8090:5000"
@@ -14,28 +46,27 @@ services:
     networks:
       - dev-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]  
-      interval: 30s  
-      retries: 3      
-      start_period: 10s  
-      timeout: 5s 
-  splunk:
-    image: splunk/splunk:latest
-    container_name: splunk
-    environment:
-      - SPLUNK_START_ARGS=--accept-license
-      - SPLUNK_PASSWORD=changeme  
-      - SPLUNK_HTTP_EVENT_COLLECTOR=1 
-      - SPLUNK_HEC_TOKEN=your_hec_token  
-    ports:
-      - "8088:8088"  # Splunk HTTP Event Collector (HEC) port
-      - "8000:8086"  # Splunk Web UI port
-      - "9997:9997"  # Splunk Forwarding port (for forwarders)
-    volumes:
-      - splunk-data:/opt/splunk/var
-    networks:
-      - dev-network
-    restart: always
+      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      timeout: 5s
+    logging:
+      driver: "splunk"
+      options:
+        splunk-token: "9420d629-935e-46b7-8c65-73aef6ee6e6d"
+        splunk-url: "http://splunk:8088"
+        splunk-verify-connection: "false"
+        splunk-format: "raw"
+        splunk-index: "main"
+        splunk-source: "ci-service"
+        splunk-sourcetype: "docker"
+
 networks:
   dev-network:
+    name: dev-network
     driver: bridge
+
+volumes:
+  splunk-data:
+    driver: local
