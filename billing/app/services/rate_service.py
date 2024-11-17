@@ -1,21 +1,21 @@
 import os
 import pandas as pd
-from flask import send_file
+from flask import send_file, jsonify
 from ..models import RatesModel  # Replace with your ORM-based model
 
 class RatesService:
-    RATES_FILE_PATH = "/in/rates.xlsx"  # Path inside the container
+    RATES_FILE_PATH = os.path.join(os.getcwd(), "in", "rates.xlsx")  # Save file in /in directory
 
     @staticmethod
     def process_rates_file(file):
         """
-        Process and save the uploaded rates file.
+        Process and validate the uploaded rates file, and save it to a predefined location.
 
         :param file: The uploaded file object
         :return: Success message
         """
         try:
-            # Read the file content (Excel file)
+            # Read the Excel file into a Pandas DataFrame
             df = pd.read_excel(file)
 
             # Validate required columns
@@ -24,22 +24,23 @@ class RatesService:
                 raise ValueError("The uploaded file must contain 'Product', 'Rate', and 'Scope' columns.")
 
             # Validate data types
-            if not all(isinstance(rate, (int, float)) for rate in df["Rate"]):
-                raise ValueError("All rates must be numeric.")
+            if not pd.api.types.is_numeric_dtype(df["Rate"]):
+                raise ValueError("All 'Rate' values must be numeric.")
 
             # Save the file to the predefined /in directory
             os.makedirs(os.path.dirname(RatesService.RATES_FILE_PATH), exist_ok=True)
             file.save(RatesService.RATES_FILE_PATH)
+
             return {"message": "Rates file processed and saved successfully"}
         except ValueError as ve:
-            raise ve
+            raise ValueError(f"Validation error: {ve}")
         except Exception as e:
-            raise IOError(f"Failed to save rates file: {e}")
+            raise IOError(f"Error processing the rates file: {e}")
 
     @staticmethod
     def get_rates_file_path():
         """
-        Get the path of the stored rates file.
+        Retrieve the path of the stored rates file.
 
         :return: File path if exists, None otherwise
         """
@@ -48,13 +49,15 @@ class RatesService:
         return None
 
     @staticmethod
-    def download_rates_file(file_path):
+    def download_rates_file():
         """
         Serve the stored rates file for download.
 
-        :param file_path: Path to the rates file
         :return: Flask response to download the file
         """
+        file_path = RatesService.get_rates_file_path()
+        if not file_path:
+            raise FileNotFoundError("Rates file not found.")
         return send_file(file_path)
 
     @staticmethod
@@ -66,11 +69,15 @@ class RatesService:
         :param data: Data containing the updated rate
         :return: The updated rate or None if not found
         """
-        # Simulate database access (replace with actual DB logic)
-        rate = RatesModel.get_by_id(rate_id)  # Assuming a RatesModel exists
-        if not rate:
-            return None
+        try:
+            rate = RatesModel.query.get(rate_id)  # Replace with actual ORM logic
+            if not rate:
+                return None
 
-        rate.Rate = data["Rate"]
-        rate.save()  # Assuming save() commits changes to the DB
-        return {"id": rate.id, "Product": rate.Product, "Rate": rate.Rate, "Scope": rate.Scope}
+            # Update rate details
+            rate.Rate = data.get("Rate", rate.Rate)
+            rate.save()  # Assuming save() commits changes to the DB
+
+            return {"id": rate.id, "Product": rate.Product, "Rate": rate.Rate, "Scope": rate.Scope}
+        except Exception as e:
+            raise RuntimeError(f"Error updating rate: {e}")
