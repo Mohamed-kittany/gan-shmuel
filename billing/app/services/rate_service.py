@@ -1,7 +1,5 @@
 import os
-import pandas as pd
 from flask import send_file, jsonify
-from ..models import RatesModel  # Replace with your ORM-based model
 
 class RatesService:
     RATES_FILE_PATH = os.path.join(os.getcwd(), "in", "rates.xlsx")  # Save file in /in directory
