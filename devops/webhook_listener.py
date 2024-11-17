@@ -7,28 +7,6 @@ from logging_config import logger
 
 app = Flask(__name__)
 
-@app.route('/rollback', methods=['POST'])
-def rollback():
-    try: 
-        # trigger rollback pipeline
-        main(rollback=True)
-        logger.info("Rollback pipeline executed")
-        # Send success email
-        send_email(
-                subject="Rollback Pipeline Success",
-                body=f"Rollback pipeline executed successfully",
-                to_addresses=["ayalm1357@gmail.com", "ayalm1357@gmail.com"]
-            )
-        return jsonify({"status": "success", "message": "Rollback pipeline executed successfully"}), 200
-    except Exception as e:
-        logger.error(f"Rollback pipeline failed: {e}")
-        # Send failure email
-        send_email(
-            subject="Rollback Pipeline Failed",
-            body=f"Rollback pipeline failed.\n\nError: {str(e)}",
-            to_addresses=["ayalm1357@gmail.com", "ayalm1357@gmail.com"]
-        )
-        return jsonify({"status": "error", "message": str(e)}), 500    
 
 @app.route('/health', methods=['GET'])
 def health():
