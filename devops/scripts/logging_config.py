@@ -1,6 +1,45 @@
 import logging
-from logging.handlers import SysLogHandler
+from logging.handlers import HTTPHandler
 import os
+import json
+import urllib.request
+from urllib.error import URLError, HTTPError
+
+class SplunkHttpHandler(HTTPHandler):
+    def __init__(self, splunk_url, token):
+        # Set up Splunk HEC URL and token
+        self.splunk_url = splunk_url
+        self.token = token
+        # Initialize HTTPHandler with Splunk's HEC URL
+        super().__init__(splunk_url, '/services/collector/event', method='POST')
+
+    def emit(self, record):
+        # Create the log entry in JSON format
+        log_entry = self.format(record)
+        payload = {
+            "event": log_entry,
+            "sourcetype": "docker",  # You can adjust this for your use case
+            "index": "main",        # Adjust the index as needed
+        }
+
+        headers = {
+            "Authorization": f"Splunk {self.token}",
+            "Content-Type": "application/json",
+        }
+
+        # Send the log to Splunk HEC via HTTP POST request
+        try:
+            req = urllib.request.Request(
+                self.splunk_url + '/services/collector/event', 
+                data=json.dumps(payload).encode('utf-8'),
+                headers=headers
+            )
+            urllib.request.urlopen(req)
+        except HTTPError as e:
+            print(f"HTTPError: {e.code} - {e.reason}")
+        except URLError as e:
+            print(f"URLError: {e.reason}")
+
 def setup_logging():
     logger = logging.getLogger('ci_pipeline')
     logger.setLevel(logging.INFO)
@@ -22,8 +61,10 @@ def setup_logging():
     file_handler.setFormatter(formatter)
     file_handler.setLevel(logging.DEBUG)
 
-    # Splunk SysLogHandler
-    splunk_handler = SysLogHandler(address=('splunk', 8088))  # Replace 'splunk' with Splunk container IP/hostname
+    # Splunk HTTP Handler
+    splunk_url = "http://splunk:8088"  # Replace with your Splunk HEC endpoint
+    splunk_token = "20031e81-9335-4eb5-8b5c-2728193f80a5"  # Replace with your HEC token
+    splunk_handler = SplunkHttpHandler(splunk_url, splunk_token)
     splunk_handler.setFormatter(formatter)
     splunk_handler.setLevel(logging.INFO)
 
