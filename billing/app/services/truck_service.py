@@ -44,7 +44,6 @@ class TruckService:
         finally:
             cursor.close()
 
-        return 201
 
 ##############################################################to implamante
     def update_provider(self, provider_id, name):

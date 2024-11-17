@@ -30,7 +30,7 @@ def create_truck():
     try:
         truck_service.create_truck(provider_id, truck_id)
         logger.info(f"Truck created successfully")
-        return 201 #need to hcnage it makes a problem with http
+        return jsonify(), 201
     except ValueError as ve:
         logger.warning(f"Failed to create Truck: {ve}")
         return jsonify({"error": str(ve)}), 409
@@ -38,8 +38,8 @@ def create_truck():
         logger.error(f"Error creating Truck: {e}")
         return jsonify({"error": "An unexpected error occurred"}), 500
 
-#####################################################to implamante
-@truck_bp.route('/provider/<int:provider_id>', methods=['PUT'])
+#PUT /truck/{id} can be used to update provider id
+@truck_bp.route('/truck/<int:provider_id>', methods=['PUT'])
 def update_provider(provider_id):
     """
     Updates the name of an existing provider.
