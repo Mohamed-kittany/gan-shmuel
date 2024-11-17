@@ -8,7 +8,7 @@ services:
     #     condition: service_healthy
     privileged: true
     ports:
-      - "8080:5000"
+      - "8090:5000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /app/dev/gan-shmuel:/app/gan-shmuel
@@ -38,6 +38,3 @@ networks:
     name: dev-network
     driver: bridge
 
-volumes:
-  splunk-data:
-    driver: local
