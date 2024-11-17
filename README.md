@@ -70,9 +70,9 @@ docker-compose up
 ```
 
 ### **3. Access Services**
-- **Weight Service**: `http://localhost:<port>`
-- **Billing Service**: `http://localhost:<port>`
-- **DevOps Service**: `http://localhost:<port>`
+- **Weight Service**: `http://localhost:8080`
+- **Billing Service**: `http://localhost:8085`
+- **DevOps Service**: `http://localhost:8090`
 
 ---
 
