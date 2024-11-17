@@ -2,6 +2,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
+from logging_config import logger  # Assuming logger is defined in logging_config.py
 
 def send_email(subject, body, to_addresses):
     """Send an email notification."""
@@ -22,11 +23,13 @@ def send_email(subject, body, to_addresses):
     smtp_port = 587
 
     try:
+        logger.info("Connecting to SMTP server...")
         # Connect to the server and send the email
         with smtplib.SMTP(smtp_server, smtp_port) as server:
             server.starttls()  # Secure the connection
             server.login(from_email, from_password)
+            logger.info(f"Logged in to the SMTP server with {from_email}")
             server.sendmail(from_email, to_addresses, msg.as_string())
-        print(f"Email sent successfully to {', '.join(to_addresses)}")
+        logger.info(f"Email sent successfully to {', '.join(to_addresses)}")
     except Exception as e:
-        print(f"Failed to send email: {e}")
+        logger.error(f"Failed to send email: {e}")
