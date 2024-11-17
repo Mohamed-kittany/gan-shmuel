@@ -2,7 +2,7 @@ import smtplib
 from dotenv import load_dotenv
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from email.utils import formataddr
+from email.header import Header  # Added this import
 import os
 from logging_config import logger
 
@@ -10,92 +10,88 @@ load_dotenv(dotenv_path=".env.test")
 
 def sanitize_body(body):
     """
-    Convert body to string and replace problematic characters.
+    Sanitize the body by handling various Unicode characters.
+    Returns a properly encoded string safe for email transmission.
     """
-    # First ensure we're working with a string
-    body = str(body)
+    if not isinstance(body, str):
+        body = str(body)
     
-    try:
-        # Try to encode and decode to catch any encoding issues early
-        return body.encode('utf-8').decode('utf-8')
-    except UnicodeError:
-        # If there are encoding issues, do character replacement
-        replacements = {
-            '\xa0': ' ',
-            '\u2018': "'",
-            '\u2019': "'",
-            '\u201c': '"',
-            '\u201d': '"',
-            '\u2013': '-',
-            '\u2014': '--'
-        }
-        for old, new in replacements.items():
-            body = body.replace(old, new)
-        return body
+    # Replace common problematic characters
+    replacements = {
+        '\xa0': ' ',  # Replace non-breaking space with regular space
+        '\u2018': "'", # Replace left single quotation mark
+        '\u2019': "'", # Replace right single quotation mark
+        '\u201c': '"', # Replace left double quotation mark
+        '\u201d': '"', # Replace right double quotation mark
+        '\u2013': '-', # Replace en dash
+        '\u2014': '--' # Replace em dash
+    }
+    
+    for old, new in replacements.items():
+        body = body.replace(old, new)
+    
+    return body
 
 def send_email(subject, body, to_addresses):
     """
-    Send an email with UTF-8 encoding throughout.
+    Send an email with proper Unicode handling.
+    
+    Args:
+        subject (str): Email subject
+        body (str): Email body text
+        to_addresses (list): List of recipient email addresses
+    
+    Returns:
+        bool: True if email was sent successfully, False otherwise
     """
     logger.info("Preparing to send email using account: %s", os.getenv("EMAIL_USERNAME"))
     
+    # Get credentials from environment
     from_email = os.getenv("EMAIL_USERNAME")
     from_password = os.getenv("EMAIL_PASSWORD")
     
+    # Validate environment variables
     if not from_email or not from_password:
         logger.error("Missing EMAIL_USERNAME or EMAIL_PASSWORD in environment variables.")
         return False
     
     try:
-        # Create the message container - using UTF-8 encoding
-        msg = MIMEMultipart('alternative')
+        # Create message container with Unicode support
+        msg = MIMEMultipart()
+        msg['From'] = from_email
+        msg['To'] = ", ".join(to_addresses)
         
-        # Encode the subject
-        subject = sanitize_body(subject)
+        # Handle subject encoding - modified to handle Unicode without Header class
         msg['Subject'] = subject
         
-        # Encode the addresses
-        msg['From'] = formataddr(('', from_email))
-        msg['To'] = ', '.join(formataddr(('', addr.strip())) for addr in to_addresses)
-        
-        # Sanitize and encode the body
+        # Sanitize and encode body
         sanitized_body = sanitize_body(body)
-        
-        # Create both plain text part
-        text_part = MIMEText(sanitized_body, 'plain', 'utf-8')
-        msg.attach(text_part)
+        msg.attach(MIMEText(sanitized_body, 'plain', 'utf-8'))
         
         # SMTP configuration
         smtp_server = "smtp.gmail.com"
         smtp_port = 587
         
         logger.info("Connecting to SMTP server...")
-        
         with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.set_debuglevel(1)
-            server.starttls()
+            server.set_debuglevel(1)  # Enable debugging
+            server.starttls()  # Enable TLS
             
-            try:
-                server.login(from_email, from_password)
-                logger.info("Successfully logged in to SMTP server")
-                
-                # Convert the entire message to a string with proper encoding
-                email_message = msg.as_string()
-                
-                # Send the email
-                server.sendmail(from_email, to_addresses, email_message)
-                logger.info(f"Email sent successfully to {', '.join(to_addresses)}")
-                return True
-                
-            except smtplib.SMTPAuthenticationError as e:
-                logger.error(f"Authentication failed: {e}")
-                return False
-                
+            # Login
+            server.login(from_email, from_password)
+            logger.info("Successfully logged in to SMTP server")
+            
+            # Send email
+            server.sendmail(from_email, to_addresses, msg.as_string())
+            logger.info(f"Email sent successfully to {', '.join(to_addresses)}")
+            
+            return True
+            
+    except smtplib.SMTPAuthenticationError as e:
+        logger.error(f"Authentication failed: {e}")
+        return False
     except smtplib.SMTPException as e:
         logger.error(f"SMTP error occurred: {e}")
-        return False
-    except UnicodeEncodeError as e:
-        logger.error(f"Unicode encoding error: {e}")
         return False
     except Exception as e:
         logger.error(f"Unexpected error while sending email: {e}")
@@ -103,17 +99,9 @@ def send_email(subject, body, to_addresses):
 
 # Example usage
 if __name__ == "__main__":
-    try:
-        recipients = ["ayalm1357@gmail.com"]
-        subject = "Test Email with Unicode"
-        body = "This is a test email with Unicode characters: Hello world! 你好世界！"
-        
-        success = send_email(subject, body, recipients)
-        print(f"Email sent successfully: {success}")
-    except Exception as e:
-        print(f"Error in main: {e}")
-
-
-
-
-
+    recipients = ["ayalm13574@gmail.com"]
+    subject = "Test Email with Unicode"
+    body = "This is a test email with Unicode characters: Hello world! 你好世界！"
+    
+    success = send_email(subject, body, recipients)
+    print(f"Email sent successfully: {success}")
