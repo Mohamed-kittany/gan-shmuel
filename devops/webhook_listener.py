@@ -1,12 +1,8 @@
 from flask import Flask, request, jsonify
 import json
+import os
 from ci_pipeline import main
 from email_service import send_email
-import os
-from logging_config import logger
-from ci_pipeline import main
-from email_service import send_email
-import os
 from logging_config import logger
 
 app = Flask(__name__)
@@ -34,7 +30,7 @@ def rollback():
         )
         return jsonify({"status": "error", "message": str(e)}), 500    
 
-@app.route('/health', methods=['POST'])
+@app.route('/health', methods=['GET'])
 def health():
     logger.info("Health check endpoint accessed")
     return 'ok'
@@ -62,21 +58,8 @@ def rollback():
         )
         return jsonify({"status": "error", "message": str(e)}), 500    
 
-@app.route('/health', methods=['POST'])
-def health():
-    logger.info("Health check endpoint accessed")
-    return 'ok'
-
 @app.route('/github-webhook', methods=['POST'])
 def github_webhook():
-    try:
-        # Get the payload of the webhook request
-        payload = request.json  # Direct access to the JSON payload
-        branch_name = payload['ref'].split('/')[-1]  # Get the branch name from the 'ref' field
-        author = payload['sender']['login']  # GitHub username of the author
-        commit_info = payload['head_commit']  # Commit details
-        commit_owner_email = commit_info['author']['email']  # Commit author's email
-        time = commit_info['timestamp']  # Commit timestamp
     try:
         # Get the payload of the webhook request
         payload = request.json  # Direct access to the JSON payload
@@ -151,7 +134,5 @@ def github_webhook():
         return jsonify({"status": "error", "message": "Invalid payload or processing error"}), 400
 
 if __name__ == '__main__':
-    logger.info("Starting Flask application")
-    app.run(host='0.0.0.0', port=5000)
     logger.info("Starting Flask application")
     app.run(host='0.0.0.0', port=5000)
