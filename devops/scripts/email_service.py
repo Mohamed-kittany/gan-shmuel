@@ -5,6 +5,7 @@ import os
 from logging_config import logger  # Assuming logger is defined in logging_config.py
 
 def send_email(subject, body, to_addresses):
+    logger.info(os.getenv("EMAIL_USERNAME"))
     """Send an email notification."""
     from_email = os.getenv("EMAIL_USERNAME")  
     from_password = os.getenv("EMAIL_PASSWORD")  

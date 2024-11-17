@@ -36,25 +36,25 @@ def clone_repository():
             except subprocess.CalledProcessError as e:
                 logger.error(f"Failed to initialize git repository: {e}")
                 raise
-
 def pull_latest_code():
-    """Pull the latest code from the GitHub repository."""
+    """Pull the latest code from the GitHub repository (from the master branch)."""
     logger.info("Pulling latest code from GitHub...")
+
     try:
         try:
-            subprocess.run(['git', 'checkout', 'ayala'], cwd=REPO_DIR, check=True, capture_output=True)
+            subprocess.run(['git', 'checkout', 'master'], cwd=REPO_DIR, check=True, capture_output=True)
         except subprocess.CalledProcessError:
             # If branch doesn't exist, create it tracking remote
-            subprocess.run(['git', 'checkout', '-b', 'ayala', 'origin/ayala'], cwd=REPO_DIR, check=True)
+            subprocess.run(['git', 'checkout', '-b', 'master', 'origin/master'], cwd=REPO_DIR, check=True)
         
         # Ensure we're tracking the remote branch
-        subprocess.run(['git', 'branch', '--set-upstream-to=origin/ayala', 'ayala'], cwd=REPO_DIR, check=True)
+        subprocess.run(['git', 'branch', '--set-upstream-to=origin/master', 'master'], cwd=REPO_DIR, check=True)
         
         # Pull latest changes
         subprocess.run(['git', 'pull'], cwd=REPO_DIR, check=True)
-        logger.info("Successfully pulled latest code")
+        logger.info("Successfully pulled latest code from master branch")
     except subprocess.CalledProcessError as e:
-        logger.error(f"Failed to pull latest code: {e}")
+        logger.error(f"Failed to pull latest code from master: {e}")
         raise
 
 def rollback_func():
