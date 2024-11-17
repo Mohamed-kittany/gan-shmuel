@@ -130,10 +130,4 @@ Contributions are welcome! Please follow the guidelines below:
 
 ---
 
-## **License**
-
-This project is licensed under the [MIT License](LICENSE).
-
----
-
 Feel free to customize further as per your team's preferences!
