@@ -1,5 +1,8 @@
 # from tests import client 
 
+## to run a specific pytest use the following command: "pytest path_to_testFile::func_name"
+
+
 # #template:
 # # def test_health_check(client):
 # #     response = client.get('/api/health')
