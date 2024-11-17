@@ -1,0 +1,38 @@
+services:
+  # Weight Backend Service
+  weight-backend:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${WEIGHT_BACKEND_PORT:-8080}:5000"  # Expose port only in prod (8080 or default)
+    depends_on:
+      - weight-db
+    env_file:
+      - .env.${ENV}  # Environment-specific .env file (e.g., .env.test or .env.prod)
+    networks:
+      - ${NETWORK_NAME:-test-network}  # Default to test-network in test, prod-network in prod
+    restart: always
+
+  # Weight Database Service
+  weight-db:
+    image: mysql:9.0.1
+    ports:
+      - "${WEIGHT_DB_PORT:-3306}:3306"  # Expose port only in prod (3306 or default)
+    volumes:
+      - /Users/ayala/Downloads/gan-shmuel/weight/db/weightdb.sql:/docker-entrypoint-initdb.d/weightdb.sql  # Only needed in test, not prod
+    environment:
+      MYSQL_ROOT_PASSWORD: ${WEIGHT_MYSQL_DATABASE_PASSWORD}
+      MYSQL_DATABASE: ${WEIGHT_MYSQL_DATABASE_DB}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+    networks:
+      - ${NETWORK_NAME:-test-network}  # Default to test-network in test, prod-network in prod
+
+networks:
+  test-network:
+    driver: bridge
+  prod-network:
+    driver: bridge
