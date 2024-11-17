@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  app:
+    build: app/.
+    container_name: w-app
+    ports:
+      - "5000:5000"
+    depends_on:
+      - w-db
+        # condition: service_healthy
+  
+  w-db:
+    image: mysql:9.0.1
+    hostname: w-db
+    container_name: w-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: weight
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./db/weightdb.sql:/docker-entrypoint-initdb.d/weightdb.sql 
+      - mysql_data:/var/lib/mysql
+    
+volumes:
+  mysql_data:
