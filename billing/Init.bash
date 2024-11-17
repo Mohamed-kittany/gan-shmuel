@@ -18,7 +18,7 @@ echo ".env file created successfully."
 
 # Step 2: Create a Python virtual environment
 echo "Setting up Python virtual environment..."
-cd billing
+#cd billing
 
 if [ ! -d "venv" ]; then
     python3 -m venv ./venv
@@ -57,6 +57,7 @@ sleep 10
 
 if docker ps --filter "name=mysql-db" --filter "status=running" | grep -q mysql-db; then
     echo "MySQL Docker container is running successfully."
+    echo "start your virtual enviorment by pressing this command in your terminal: source ./venv/bin/activate"
 else
     echo "MySQL Docker container is not running. Please check the logs for issues."
     exit 1
