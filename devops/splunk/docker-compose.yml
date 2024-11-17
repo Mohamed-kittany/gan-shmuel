@@ -17,7 +17,7 @@ services:
       - "9997:9997"
     volumes:
       - splunk-data:/opt/splunk/var
-      - ./splunk-config:/opt/splunk/etc
+      - /app/splunk-config:/opt/splunk/etc
     networks:
       - dev-network
     restart: always
