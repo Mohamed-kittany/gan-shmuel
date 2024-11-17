@@ -7,6 +7,8 @@ RUN curl -L "https://github.com/docker/compose/releases/download/$(curl -s https
 WORKDIR /app
 COPY .env.test .env.test
 COPY .env.prod .env.prod
+COPY .env.test .env.test
+COPY .env.prod .env.prod
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 COPY webhook_listener.py .
