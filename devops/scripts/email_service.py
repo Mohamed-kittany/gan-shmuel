@@ -2,6 +2,7 @@ import smtplib
 from dotenv import load_dotenv
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.header import Header  # Added this import
 import os
 from logging_config import logger
 
@@ -60,8 +61,8 @@ def send_email(subject, body, to_addresses):
         msg['From'] = from_email
         msg['To'] = ", ".join(to_addresses)
         
-        # Encode subject with UTF-8
-        msg['Subject'] = str(Header(subject, 'utf-8'))
+        # Handle subject encoding - modified to handle Unicode without Header class
+        msg['Subject'] = subject
         
         # Sanitize and encode body
         sanitized_body = sanitize_body(body)
@@ -98,7 +99,7 @@ def send_email(subject, body, to_addresses):
 
 # Example usage
 if __name__ == "__main__":
-    recipients = ["example@example.com"]
+    recipients = ["ayalm13574@gmail.com"]
     subject = "Test Email with Unicode"
     body = "This is a test email with Unicode characters: Hello world! 你好世界！"
     
