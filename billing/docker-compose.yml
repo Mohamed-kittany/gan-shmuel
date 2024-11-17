@@ -20,7 +20,7 @@ services:
     ports:
       - "${BILLING_DB_PORT:-3307}:3306"  # Expose port only in prod (3307 or default)
     volumes:
-      - /path/to/billingdb.sql:/docker-entrypoint-initdb.d/billingdb.sql  # Only needed in test, not prod
+      - /Users/ayala/Downloads/gan-shmuel/billing/database/billingdb.sql:/docker-entrypoint-initdb.d/billingdb.sql  # Only needed in test, not prod
     environment:
       MYSQL_ROOT_PASSWORD: ${BILLING_MYSQL_DATABASE_PASSWORD}
       MYSQL_DATABASE: ${BILLING_MYSQL_DATABASE_DB}
