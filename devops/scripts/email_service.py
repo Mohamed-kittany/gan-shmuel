@@ -7,6 +7,11 @@ from logging_config import logger
 
 load_dotenv(dotenv_path=".env.test")
 
+def sanitize_body(body):
+    """Sanitize the body by replacing non-ASCII characters with a safe equivalent."""
+    # Replace non-breaking spaces with regular spaces
+    return body.replace('\xa0', ' ')
+
 def send_email(subject, body, to_addresses):
     logger.info("email: %s", os.getenv("EMAIL_USERNAME"))
     from_email = os.getenv("EMAIL_USERNAME")
@@ -17,13 +22,16 @@ def send_email(subject, body, to_addresses):
         logger.error("Missing EMAIL_USERNAME or EMAIL_PASSWORD in environment variables.")
         return
 
+    # Sanitize the body to avoid non-ASCII characters causing issues
+    body = sanitize_body(body)
+
     # Set up the MIME
     msg = MIMEMultipart()
     msg['From'] = from_email
     msg['To'] = ", ".join(to_addresses)
     msg['Subject'] = subject
 
-    # Attach the body to the email with UTF-8 encoding
+    # Attach the sanitized body to the email with UTF-8 encoding
     msg.attach(MIMEText(body, 'plain', _charset='utf-8'))
 
     # SMTP server configuration (e.g., Gmail)
