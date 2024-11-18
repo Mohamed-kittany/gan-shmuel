@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  # MySQL service for weight database
+  w-db:
+    image: mysql:8.0
+    container_name: w-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: weight
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./db/weightdb.sql:/docker-entrypoint-initdb.d/weightdb.sql  # Mapping the SQL script to initialize the database
+      - w-db-data:/var/lib/mysql  # Persistent storage for the MySQL data
+
+  # Your weight app (example)
+  weight-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - w-db
+    ports:
+      - "5000:5000"
+
+# Volumes definition
+volumes:
+  w-db-data:
+    driver: local
+
