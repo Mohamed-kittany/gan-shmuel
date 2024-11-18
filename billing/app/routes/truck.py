@@ -2,6 +2,9 @@ import logging
 from flask import Blueprint, jsonify, request
 from ..services import TruckService
 
+WEIGHT_SERVICE_URL = "http://weight-app:6000"
+
+
 truck_bp = Blueprint('truck', __name__)
 truck_service = TruckService()
 
@@ -65,4 +68,30 @@ def update_truck(id):
             logger.warning(f"This provider ID dose not exist you need to add it first: {provider_id}: {e}")
             return jsonify({"error": "A provider with this id dose not exists."}), 409
         logger.error(f"Error updating truvk with provider id: {provider_id}: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+
+#truck get
+@truck_bp.route("/truck/<id>?from=t1&to=t2", methods=["GET"])
+def get_truck_data(id, time_start, time_end):
+    """
+    Fetches truck data including last known tara and session IDs.
+
+    Query Parameters:
+        - id (str): Truck license ID. 404 if non-existent.
+        - from (str): Optional start date-time in yyyymmddhhmmss format. Default: 1st of current month at 00:00:00.
+        - to (str): Optional end date-time in yyyymmddhhmmss format. Default: current time.
+
+    Returns:
+        JSON response:
+        {
+            "id": <str>,
+            "tara": <int>, // last known tara in kg
+            "sessions": [<str>, ...] // list of session IDs
+        }
+    """
+    try:
+        logger.info(f"Received request to get info about truck: {id}")
+        return request.get(f"{WEIGHT_SERVICE_URL}/item/{id}?from={time_start}&to={time_end}"), 200
+    except Exception as e:
+        logger.error(f"Error geting truck: {e}")
         return jsonify({"error": "An unexpected error occurred"}), 500
