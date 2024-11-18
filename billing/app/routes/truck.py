@@ -33,7 +33,7 @@ def create_truck():
     try:
         truck_service.create_truck(provider_id, truck_id)
         logger.info(f"Truck created successfully")
-        return jsonify(), 201
+        return jsonify("Truck created"), 201
     except ValueError as ve:
         logger.warning(f"Failed to create Truck: {ve}")
         return jsonify({"error": str(ve)}), 409

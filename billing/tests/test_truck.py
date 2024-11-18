@@ -111,7 +111,6 @@ def test_put_truck_invalid_truck_id(client):
     assert response.status_code == 404
     assert response.json == {"error": "A truck with this id dosnt exists."}
 
-
 def test_put_truck_invalid_provider_id(client):
     """Test invalid provider ID during truck update."""
     data = {"provider_id": 999}  # Invalid provider ID

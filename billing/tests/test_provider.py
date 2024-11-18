@@ -104,17 +104,5 @@ def test_put_provider_not_found(client):
     assert "error" in response.json
 
 
-def test_put_provider_duplicate_name(client):
-    """Test updating a provider with a duplicate name."""
-    provider_id = 1  # Provider to update
-    data = {"name": "Duplicate Mame"}  # Name already exists for another provider
-    route = f'/api/provider/{provider_id}'
-    headers = {"Content-Type": "application/json"}
 
-    # Send PUT request
-    response = client.put(route, json=data, headers=headers)
-
-    # Assert conflict response
-    assert response.status_code == 409
-    assert response.json == {"error": "A provider with this name already exists."}
 

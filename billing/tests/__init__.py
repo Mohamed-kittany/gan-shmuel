@@ -77,7 +77,7 @@ def mock_excel_file_invalid_data():
         pd.DataFrame(data).to_excel(buffer, index=False)
         buffer.seek(0)
         return buffer
-
+    
     yield create_invalid_data_excel()  # Yield the file for use
 
 
