@@ -1,8 +1,13 @@
-FROM python:3.9-slim-buster
+FROM python:3.11-slim
+
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY webhook_listener.py .
-COPY scripts .
+
+COPY . /app
+
+RUN pip install --no-cache-dir -r requirements.txt
+
 EXPOSE 5000
-CMD ["python", "webhook_listener.py"]
+
+ENV FLASK_APP=app.py
+
+CMD ["flask", "run", "--host=0.0.0.0"]
