@@ -21,7 +21,7 @@ def health():
 def rollback():
     try: 
         # trigger rollback pipeline
-        main(rollback=True)
+        main(rollback=False)
         logger.info("Rollback pipeline executed")
         # Send success email
         send_email(

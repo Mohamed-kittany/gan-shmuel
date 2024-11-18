@@ -779,7 +779,7 @@ class TestHandler:
             logger.info("Tests passed successfully!")
             return True
         else:
-            if not rollback:
+            if not rollback:  # Only trigger rollback if not requested by the user
                 GitHandler.rollback()
             logger.error(f"Tests failed with exit code {result.returncode}")
             logger.error(f"Test output: {result.stdout}\n{result.stderr}")
@@ -798,6 +798,7 @@ class Pipeline:
             # Step 1: Clone and pull the latest code
             GitHandler.clone_repository()
 
+            # Rollback if necessary
             if rollback:
                 GitHandler.rollback()
 
@@ -806,21 +807,22 @@ class Pipeline:
             DockerHandler.build_and_deploy(REPO_DIR / 'billing', self.environment)
             DockerHandler.build_and_deploy(REPO_DIR / 'weight', self.environment, other_service_dir=REPO_DIR / 'billing')
 
-            # Step 3: Run tests
+            # Step 3: Run tests for billing service
             logger.info("Running tests for billing service...")
             if not TestHandler.run_tests(str(REPO_DIR / 'billing' / 'tests'), rollback):
                 raise RuntimeError("Tests failed in the billing service. Aborting pipeline.")
 
+            # Step 4: Run tests for weight service
             logger.info("Running tests for weight service...")
             if not TestHandler.run_tests(str(REPO_DIR / 'weight' / 'tests'), rollback):
                 raise RuntimeError("Tests failed in the weight service. Aborting pipeline.")
 
-            # Step 4: Cleanup test environment before deploying to production
+            # Step 5: Cleanup test environment before deploying to production
             logger.info("Cleaning up test environment...")
             DockerHandler.cleanup_containers(REPO_DIR / 'billing')
             DockerHandler.cleanup_containers(REPO_DIR / 'weight')
 
-            # Step 5: Deploy to production environment with zero-downtime
+            # Step 6: Deploy to production environment with zero-downtime
             logger.info("Deploying to production environment...")
             os.environ['ENV'] = 'prod'
             DockerHandler.build_and_deploy(REPO_DIR / 'billing', 'prod')
@@ -831,13 +833,11 @@ class Pipeline:
         except Exception as e:
             logger.error(f"CI pipeline failed: {e}")
             raise
-
-
-def main():
-    """Main entry point to run the pipeline."""
+def main(rollback=False):
+    """Main entry point to run the pipeline with optional rollback."""
     pipeline = Pipeline(environment=os.getenv('ENV', 'test'))
-    pipeline.run()
-
+    pipeline.run(rollback=rollback)
 
 if __name__ == "__main__":
-    main()
+    # Pass rollback=True if you want to trigger the rollback logic
+    main(rollback=True)
