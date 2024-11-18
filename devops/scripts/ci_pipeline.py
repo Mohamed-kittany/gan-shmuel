@@ -705,7 +705,7 @@ def main(rollback=False, env_suffix=None):
         build_and_deploy(weight_service_dir, environment, 'weight')
 
         logger.info("Running tests in the test environment...")
-        environment = os.getenv('ENV', 'prod')
+       
         
         cleanup_containers(billing_service_dir, environment)  # Clean old containers for billing
         cleanup_containers(weight_service_dir, environment) 
@@ -713,8 +713,11 @@ def main(rollback=False, env_suffix=None):
         
         load_dotenv(dotenv_path="env.prod")
         print("Environment:", os.getenv('ENV', 'Not Set'))
-        blue_green_deploy(target_prod_dir / 'billing', 'prod', 'billing')  
-        blue_green_deploy(target_prod_dir / 'weight', 'prod', 'weight')
+        os.environ['ENV'] = 'prod'
+        environment = os.getenv('ENV', 'prod')
+        logger.info(f"Deploying to {environment} environment...")
+        blue_green_deploy(target_prod_dir / 'billing', environment, 'billing')  
+        blue_green_deploy(target_prod_dir / 'weight', environment, 'weight')
         
         # Cleanup test environment after successful deployment to the new environments
          # Clean old containers for weight
