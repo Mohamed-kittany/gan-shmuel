@@ -623,9 +623,11 @@ def build_and_deploy(service_dir, environment, service_type):
 def run_tests(test_dir):
     """Run test suite and return status."""
     logger.info(f"Running tests in {test_dir}...")
-    result = run_subprocess(['pytest', test_dir, '--maxfail=1', '--disable-warnings', '-q'], cwd=test_dir)
+    result = run_subprocess(['pytest', str(test_dir), '--maxfail=1', '--disable-warnings', '-q'], cwd=test_dir)
     logger.info("Test results:\n" + result)
     return True
+
+
 
 def blue_green_deploy(service_dir, environment):
     """Perform a blue-green deployment."""
@@ -666,15 +668,12 @@ def main(rollback=False, env_suffix=None):
         
         # Copy billing and weight folders to /app/test or /app/prod/{version}
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        target_test_dir = Path(f'/app/test')
         target_prod_dir = Path(f'/app/prod/{timestamp}') 
         
-        # Ensure the target directories exist
-        target_test_dir.mkdir(parents=True, exist_ok=True)  # Create directories if they don't exist
         target_prod_dir.mkdir(parents=True, exist_ok=True)  # Create directories if they don't exist
         
         for service_dir, target_dir in [
-            (billing_service_dir, target_test_dir / 'billing'),
+            (billing_service_dir, target_prod_dir / 'billing'),
             (weight_service_dir, target_prod_dir / 'weight')
         ]:
         # Copy the entire directory structure (not just a single file)
