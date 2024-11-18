@@ -646,9 +646,9 @@ def run_tests(test_directory, rollback=False):
 
 
 
-def blue_green_deploy(service_dir, environment):
+def blue_green_deploy(service_dir, environment,service_type):
     """Perform a blue-green deployment."""
-    backend_port, db_port = find_free_ports()
+    backend_port, db_port = find_free_ports(service_type)
     os.environ[f'{service_dir.upper()}_BACKEND_PORT'] = str(backend_port)
     os.environ[f'{service_dir.upper()}_DB_PORT'] = str(db_port)
     build_and_deploy(service_dir, environment)
@@ -704,8 +704,8 @@ def main(rollback=False, env_suffix=None):
         environment = os.getenv('ENV', 'prod')
 
         #if run_tests(weight_service_dir / 'tests') and run_tests(billing_service_dir / 'tests'):
-        blue_green_deploy(billing_service_dir, 'prod')
-        blue_green_deploy(weight_service_dir, 'prod')
+        blue_green_deploy(billing_service_dir, 'prod', 'billing')  
+        blue_green_deploy(weight_service_dir, 'prod', 'weight')
         
         # Cleanup after successful deployment to the new environments
         cleanup_containers(billing_service_dir, environment)  # Clean old containers for billing
