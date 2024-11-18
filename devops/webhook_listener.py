@@ -70,7 +70,7 @@ def github_webhook():
         # Call the CI pipeline with the appropriate environment
         try:
             # Set environment variable to control which .env file to load
-            os.environ['ENV'] = environment
+            # os.environ['ENV'] = environment
             main()  # Trigger the pipeline for the test environment
             
             # Run tests after deploying to the test environment

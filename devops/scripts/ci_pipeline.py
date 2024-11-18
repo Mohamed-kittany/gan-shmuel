@@ -670,7 +670,7 @@ def rollback_func():
 
 def main(rollback=False, env_suffix=None):
     try:
-        print("Environment:", os.getenv('ENV', 'Not Set'))
+        logger.info("Starting CI pipeline...")
 
         clone_or_update_repo()
 
@@ -680,8 +680,8 @@ def main(rollback=False, env_suffix=None):
 
         # Now the environment suffix is always set
         os.environ["ENV_SUFFIX"] = env_suffix if env_suffix else "1"
-        environment = os.getenv('ENV', 'prod')
-        
+        # environment = os.getenv('ENV', 'prod')
+        environment='prod'
         
         # Define the folder paths based on environment suffix
         billing_service_dir = REPO_DIR / 'billing'
@@ -722,8 +722,9 @@ def main(rollback=False, env_suffix=None):
             for key, value in os.environ.items():
                 logger.info(f"{key}: {value}")
         log_environment_variables()
-        os.environ['ENV'] = 'prod'
-        environment = os.getenv('ENV', 'prod')
+        # os.environ['ENV'] = 'prod'
+        # environment = os.getenv('ENV', 'prod')
+        environment = 'prod'
         logger.info(f"Deploying to {os.getenv('ENV', 'prod')} environment...")
         blue_green_deploy(target_prod_dir / 'billing', environment, 'billing')  
         blue_green_deploy(target_prod_dir / 'weight', environment, 'weight')
