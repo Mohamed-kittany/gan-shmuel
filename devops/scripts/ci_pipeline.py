@@ -246,14 +246,14 @@ def main(rollback=False):
         build_and_deploy(REPO_DIR / 'weight', environment, other_service_dir=REPO_DIR / 'billing')
 
         # Step 3: Check if tests passed (if applicable)
-        # logger.info("Running tests in the test environment...")
-        # logger.info("Running tests for billing service...")
-        # if not check_tests_passed(str(REPO_DIR / 'billing' / 'tests')):
-        #     raise RuntimeError("Tests failed in the billing service. Aborting pipeline.")
+        logger.info("Running tests in the test environment...")
+        logger.info("Running tests for billing service...")
+        if not check_tests_passed(str(REPO_DIR / 'billing' / 'tests')):
+            raise RuntimeError("Tests failed in the billing service. Aborting pipeline.")
         
-        # logger.info("Running tests for weight service...")
-        # if not check_tests_passed(str(REPO_DIR / 'weight' / 'tests')):
-        #     raise RuntimeError("Tests failed in the weight service. Aborting pipeline.")
+        logger.info("Running tests for weight service...")
+        if not check_tests_passed(str(REPO_DIR / 'weight' / 'tests')):
+            raise RuntimeError("Tests failed in the weight service. Aborting pipeline.")
         
         # Step 4: Clean up test environment before deploying to production
         logger.info("Cleaning up test environment...")
