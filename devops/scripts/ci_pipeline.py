@@ -355,14 +355,14 @@ import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
-import shutil
-from typing import List, Tuple
+from typing import List
 from logging_config import logger
 
 
 class DeploymentError(Exception):
     """Custom exception for deployment errors"""
     pass
+
 
 def run_command(command: List[str], cwd: Path = None, check: bool = True) -> str:
     """
@@ -383,6 +383,7 @@ def run_command(command: List[str], cwd: Path = None, check: bool = True) -> str
         if check:
             raise DeploymentError(f"Command failed: {e.stderr}")
         return ""
+
 
 class DockerService:
     def __init__(self, service_dir: Path, service_name: str, env_file: str):
@@ -423,6 +424,7 @@ class DockerService:
             ['docker', 'ps', '--filter', f'name={project_name}', '--format', '{{.Names}}']
         ).splitlines()
 
+
 class Deployment:
     def __init__(self, repo_url: str, base_dir: Path):
         self.repo_url = repo_url
@@ -457,20 +459,16 @@ class Deployment:
 
     def deploy_service(self, service: DockerService, env_file: str) -> bool:
         try:
-            # Deploy new version with temporary name
+            # Deploy new version with temporary name for testing
             new_project = f"{service.service_name}_new"
             service.build(new_project)
             service.start(new_project)
 
-            # Check if new deployment is healthy (skip health check for now)
-            # if not service.is_healthy(new_project):
-            #     raise DeploymentError("New containers are not healthy")
-
-            logger.info(f"New version of {service.service_name} deployed successfully.")
-
             # Run tests after deploying to test environment
             if not self.run_tests(service.service_dir):
-                raise DeploymentError(f"Tests failed for {service.service_name} in test environment")
+                logger.error(f"Tests failed for {service.service_name} in test environment")
+                service.stop(new_project)
+                return False
 
             # Stop old deployment if it exists
             old_project = f"{service.service_name}_old"
@@ -506,7 +504,7 @@ class Deployment:
         """Run the complete CI/CD pipeline"""
         try:
             logger.info("Starting CI/CD pipeline")
-            
+
             # Clone/update repository
             self.clone_repo()
 
@@ -527,7 +525,10 @@ class Deployment:
                 if not self.deploy_service(service, env_file):
                     raise DeploymentError(f"Deployment to test environment failed for {service_name}")
 
-                # If tests pass, deploy to prod environment
+            # After test deployment success, deploy to production
+            for service_name, env_file in services:
+                service_dir = self.repo_dir / service_name
+                service = DockerService(service_dir, service_name, '.env.prod')
                 if not self.deploy_to_prod(service):
                     raise DeploymentError(f"Deployment to production failed for {service_name}")
 
@@ -537,18 +538,3 @@ class Deployment:
         except Exception as e:
             logger.error(f"CI/CD pipeline failed: {e}")
             return False
-
-def main():
-    # Configuration
-    REPO_URL = "https://github.com/AM8151/gan-shmuel.git"
-    BASE_DIR = Path(__file__).parent
-
-    # Create and run deployment
-    deployment = Deployment(REPO_URL, BASE_DIR)
-    success = deployment.run()
-
-    # Exit with appropriate status code
-    exit(0 if success else 1)
-
-if __name__ == "__main__":
-    main()
