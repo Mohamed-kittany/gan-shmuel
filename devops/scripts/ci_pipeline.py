@@ -707,6 +707,8 @@ def main(rollback=False, env_suffix=None):
         cleanup_containers(billing_service_dir, environment)  # Clean old containers for billing
         cleanup_containers(weight_service_dir, environment) 
         #if run_tests(weight_service_dir / 'tests') and run_tests(billing_service_dir / 'tests'):
+        
+        load_dotenv(dotenv_path="env.prod")
         blue_green_deploy(target_prod_dir / 'billing', 'prod', 'billing')  
         blue_green_deploy(target_prod_dir / 'weight', 'prod', 'weight')
         
