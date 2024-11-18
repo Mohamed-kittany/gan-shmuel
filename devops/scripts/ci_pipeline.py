@@ -704,12 +704,13 @@ def main(rollback=False, env_suffix=None):
 
         logger.info("Running tests in the test environment...")
         environment = os.getenv('ENV', 'prod')
-
-        #if run_tests(weight_service_dir / 'tests') and run_tests(billing_service_dir / 'tests'):
-        blue_green_deploy(billing_service_dir, 'prod', 'billing')  
-        blue_green_deploy(weight_service_dir, 'prod', 'weight')
         
-        # Cleanup after successful deployment to the new environments
+       
+        #if run_tests(weight_service_dir / 'tests') and run_tests(billing_service_dir / 'tests'):
+        blue_green_deploy(target_prod_dir / 'billing', 'prod', 'billing')  
+        blue_green_deploy(target_prod_dir / 'weight', 'prod', 'weight')
+        
+        # Cleanup test environment after successful deployment to the new environments
         cleanup_containers(billing_service_dir, environment)  # Clean old containers for billing
         cleanup_containers(weight_service_dir, environment)   # Clean old containers for weight
         
