@@ -646,13 +646,15 @@ def run_tests(test_directory, rollback=False):
 
 
 
-def blue_green_deploy(service_dir, environment,service_type):
+def blue_green_deploy(service_dir, environment, service_type):
     """Perform a blue-green deployment."""
     backend_port, db_port = find_free_ports(service_type)
-    os.environ[f'{service_dir.upper()}_BACKEND_PORT'] = str(backend_port)
-    os.environ[f'{service_dir.upper()}_DB_PORT'] = str(db_port)
-    build_and_deploy(service_dir, environment)
+    # Convert service_dir to string before calling upper()
+    os.environ[f'{str(service_dir).upper()}_BACKEND_PORT'] = str(backend_port)
+    os.environ[f'{str(service_dir).upper()}_DB_PORT'] = str(db_port)
+    build_and_deploy(service_dir, environment, service_type)
     logger.info(f"Blue-green deployment complete for {service_dir}.")
+
 
 def rollback_func():
     """Rollback to the previous commit in the repository."""
