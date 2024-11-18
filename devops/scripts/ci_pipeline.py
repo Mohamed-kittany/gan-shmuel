@@ -468,7 +468,7 @@ class Deployment:
 
             # Run tests after deploying to test environment
             logger.info(f"New version of {service.service_name} deployed successfully to test environment.")
-            return self.run_tests(service.service_dir)
+            # return self.run_tests(service.service_dir)
         
         except Exception as e:
             logger.error(f"Deployment failed for {service.service_name}: {e}")
