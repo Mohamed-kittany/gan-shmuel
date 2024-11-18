@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 import json
+from flask_cors import CORS 
 import os
 from ci_pipeline import main
 from email_service import send_email
@@ -7,7 +8,7 @@ from logging_config import logger
 
 app = Flask(__name__)
 
-
+CORS(app)
 @app.route('/health', methods=['GET'])
 def health():
     logger.info("Health check endpoint accessed")
