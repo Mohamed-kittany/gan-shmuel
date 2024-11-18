@@ -681,8 +681,8 @@ def main(rollback=False, env_suffix=None):
         # Now the environment suffix is always set
         os.environ["ENV_SUFFIX"] = env_suffix if env_suffix else "1"
         # environment = os.getenv('ENV', 'prod')
-        environment='prod'
-        
+        environment='test'
+        load_dotenv(dotenv_path="env.test")
         # Define the folder paths based on environment suffix
         billing_service_dir = REPO_DIR / 'billing'
         weight_service_dir = REPO_DIR / 'weight'
@@ -708,8 +708,8 @@ def main(rollback=False, env_suffix=None):
             copytree(service_dir, target_dir, ignore=ignore_patterns(), dirs_exist_ok=True, copy_function=log_copy)
 
         # Deploy test environment
-        # build_and_deploy(billing_service_dir, environment, 'billing')
-        # build_and_deploy(weight_service_dir, environment, 'weight')
+        build_and_deploy(billing_service_dir, environment, 'billing')
+        build_and_deploy(weight_service_dir, environment, 'weight')
 
         logger.info("Running tests in the test environment...")
         
