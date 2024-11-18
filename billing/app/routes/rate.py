@@ -26,40 +26,4 @@ def get_all_rates():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@rate_bp.route('/<product_id>', methods=['GET'])
-def get_rate_by_product(product_id):
-    """Retrieve a specific rate by product ID."""
-    try:
-        rate = RateService.get_rate_by_product_id(product_id)
-        if rate:
-            return jsonify(rate), 200
-        else:
-            return jsonify({"error": "Rate not found"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
-@rate_bp.route('/<product_id>', methods=['PUT'])
-def update_rate(product_id):
-    """Update a specific rate by product ID."""
-    data = request.json
-    if not data or "rate" not in data:
-        return jsonify({"error": "Invalid or missing data"}), 400
-    try:
-        updated_rate = RateService.update_rate(product_id, data)
-        if updated_rate:
-            return jsonify({"message": "Rate updated successfully", "rate": updated_rate}), 200
-        else:
-            return jsonify({"error": "Rate not found"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@rate_bp.route('/<product_id>', methods=['DELETE'])
-def delete_rate(product_id):
-    """Delete a specific rate by product ID."""
-    try:
-        if RateService.delete_rate(product_id):
-            return jsonify({"message": "Rate deleted successfully"}), 200
-        else:
-            return jsonify({"error": "Rate not found"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
