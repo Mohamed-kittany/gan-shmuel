@@ -8,7 +8,8 @@ from logging_config import logger
 
 app = Flask(__name__)
 
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
+
 @app.route('/health', methods=['GET'])
 def health():
     logger.info("Health check endpoint accessed")
