@@ -244,9 +244,8 @@ def main(rollback=False):
         clone_repository()
 
         # Rollback to the previous commit if rollback flag is set
-        if not rollback:
-            pull_latest_code()
-        else:
+        pull_latest_code()
+        if rollback:
             rollback_func()
 
         # Step 2: Build and deploy both services in the test environment
