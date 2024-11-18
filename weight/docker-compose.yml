@@ -37,3 +37,7 @@ networks:
     driver: bridge
   prod-network:
     driver: bridge
+
+volumes:
+  weight-db-data:
+    driver: local

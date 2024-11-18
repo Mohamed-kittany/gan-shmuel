@@ -37,3 +37,7 @@ networks:
     driver: bridge
   prod-network:
     driver: bridge
+
+volumes:
+  billing-db-data:
+    driver: local
