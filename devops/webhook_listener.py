@@ -60,7 +60,7 @@ def github_webhook():
         
         # Determine environment based on branch name
         if branch_name in ['master', 'billing', 'weight']:
-            environment = 'test'
+            environment = 'prod'
         else:
             logger.warning(f"Unknown branch: {branch_name}")
             return jsonify({"status": "error", "message": "Unknown branch"}), 400

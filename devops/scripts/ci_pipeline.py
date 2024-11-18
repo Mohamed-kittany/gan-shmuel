@@ -499,10 +499,11 @@ from dotenv import load_dotenv
 from logging_config import logger
 from datetime import datetime
 
-load_dotenv(dotenv_path="env.test")
+
 
 CURRENT_DIR = Path(__file__).parent
 REPO_DIR = CURRENT_DIR / "gan-shmuel"
+
 
 class CloneRepositoryError(Exception):
     pass
@@ -669,6 +670,8 @@ def rollback_func():
 
 def main(rollback=False, env_suffix=None):
     try:
+        print("Environment:", os.getenv('ENV', 'Not Set'))
+
         clone_or_update_repo()
 
         # Ensure env_suffix is not None
@@ -709,6 +712,7 @@ def main(rollback=False, env_suffix=None):
         #if run_tests(weight_service_dir / 'tests') and run_tests(billing_service_dir / 'tests'):
         
         load_dotenv(dotenv_path="env.prod")
+        print("Environment:", os.getenv('ENV', 'Not Set'))
         blue_green_deploy(target_prod_dir / 'billing', 'prod', 'billing')  
         blue_green_deploy(target_prod_dir / 'weight', 'prod', 'weight')
         
