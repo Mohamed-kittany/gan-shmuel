@@ -37,7 +37,7 @@ def send_email(subject, body, to_addresses, cc_addresses=None):
                     line-height: 1.6;
                 }}
                 h2 {{
-                    color: #4CAF50;
+                    color: black;
                 }}
                 p {{
                     color: #333;
@@ -60,8 +60,7 @@ def send_email(subject, body, to_addresses, cc_addresses=None):
         <body>
             <h2>📣 {subject}</h2>
             <p>{body}</p>
-            <p class="success">✔️ הכל בוצע בהצלחה!</p>
-            <p class="footer">💻 נשלח אוטומטית על ידי מערכת ה-CI Pipeline</p>
+            <p class="footer">sent from 💻 CI Pipeline</p>
         </body>
     </html>
     """
