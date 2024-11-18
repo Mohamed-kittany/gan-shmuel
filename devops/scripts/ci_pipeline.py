@@ -693,27 +693,28 @@ def main(rollback=False, env_suffix=None):
         
         target_prod_dir.mkdir(parents=True, exist_ok=True)  # Create directories if they don't exist
         
+        def log_copy(src, dst):
+            """Log each file copied during the copy operation."""
+            logger.info(f"Copying from {src} to {dst}")
+            copyfile(src, dst)
+            logger.info(f"Successfully copied file: {src} to {dst}")
+        
+        # Copy the directories and log each file
         for service_dir, target_dir in [
             (billing_service_dir, target_prod_dir / 'billing'),
             (weight_service_dir, target_prod_dir / 'weight')
         ]:
-        # Copy the entire directory structure (not just a single file)
-            copytree(service_dir, target_dir, dirs_exist_ok=True)
+            logger.info(f"Starting to copy service from {service_dir} to {target_dir}")
+            copytree(service_dir, target_dir, ignore=ignore_patterns(), dirs_exist_ok=True, copy_function=log_copy)
 
-        def log_copy(src, dst):
-            logger.info(f"Copying from {src} to {dst}")
-            copytree(src, dst, ignore=ignore_patterns(), dirs_exist_ok=True, copy_function=log_copy)
-            
         # Deploy test environment
         build_and_deploy(billing_service_dir, environment, 'billing')
         build_and_deploy(weight_service_dir, environment, 'weight')
 
         logger.info("Running tests in the test environment...")
-       
         
         cleanup_containers(billing_service_dir, environment)  # Clean old containers for billing
         cleanup_containers(weight_service_dir, environment) 
-        #if run_tests(weight_service_dir / 'tests') and run_tests(billing_service_dir / 'tests'):
         
         load_dotenv(dotenv_path="env.prod")
         def log_environment_variables():
@@ -744,6 +745,7 @@ def main(rollback=False, env_suffix=None):
     except Exception as e:
         logger.error(f"Error: {e}")
         raise
+
 
 if __name__ == '__main__':
     main()
