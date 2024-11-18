@@ -349,31 +349,56 @@
 #         raise
 # if __name__ == '__main__':
 #     main()
+import os
+import subprocess
+import time
 import shutil
+from datetime import datetime
+from pathlib import Path  # Missing import added here
+from typing import List
+from logging_config import logger
+
+
+class DeploymentError(Exception):
+    """Custom exception for deployment errors"""
+    pass
+
+
+def run_command(command: List[str], cwd: Path = None, check: bool = True) -> str:
+    """
+    Execute a shell command and return its output.
+    """
+    try:
+        result = subprocess.run(
+            command,
+            cwd=cwd,
+            check=check,
+            capture_output=True,
+            text=True
+        )
+        return result.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Command failed: {' '.join(command)}")
+        logger.error(f"Error output: {e.stderr}")
+        if check:
+            raise DeploymentError(f"Command failed: {e.stderr}")
+        return ""
+
 
 class DockerService:
     def __init__(self, service_dir: Path, service_name: str, env_file: str):
         self.service_dir = service_dir
         self.service_name = service_name
         self.env_file = env_file
-        self.env_file_path = Path("/app") / self.env_file  # Path should be set correctly
+        # Update env_file to be the absolute path, assuming it's in the /app directory
+        self.env_file_path = Path("/app") / self.env_file
+
+        # docker-compose command
         self.compose_cmd = [
             'docker-compose',
             '-f', str(service_dir / 'docker-compose.yml'),
             '--env-file', str(self.env_file_path)
         ]
-
-    def copy_env_file(self, target_env_file: str) -> None:
-        """Copy the .env file to the service directory"""
-        target_env_path = self.service_dir / target_env_file
-        source_env_path = Path("/app") / target_env_file
-
-        # Ensure the .env file exists in the service directory
-        if source_env_path.exists():
-            shutil.copy(source_env_path, target_env_path)
-            logger.info(f"Copied {target_env_file} to {self.service_dir}")
-        else:
-            raise DeploymentError(f"{target_env_file} not found in /app directory")
 
     def build(self, project_name: str) -> None:
         """Build the Docker images"""
@@ -440,7 +465,6 @@ class Deployment:
         try:
             # Deploy new version with temporary name to test environment first
             new_project = f"{service.service_name}_new"
-            service.copy_env_file('.env.test')  # Copy the correct .env file to service directory
             service.build(new_project)
             service.start(new_project)
 
@@ -464,8 +488,9 @@ class Deployment:
 
     def deploy_to_prod(self, service: DockerService) -> bool:
         """Deploy the service to production environment"""
+        # Deploy to prod with .env.prod
         logger.info(f"Deploying {service.service_name} to production")
-        service.copy_env_file('.env.prod')  # Copy .env.prod for production
+        service.env_file = '.env.prod'  # Ensure the correct environment file is used for prod
         return self.deploy_service(service, '.env.prod')
 
     def run(self) -> bool:
