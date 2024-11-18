@@ -488,7 +488,7 @@ class Deployment:
         """Deploy the service to production environment"""
         # Deploy to prod with .env.prod
         logger.info(f"Deploying {service.service_name} to production")
-        service.env_file = '.env.prod'
+        service.env_file = '.env.prod'  # Ensure the correct environment file is used for prod
         return self.deploy_service(service, '.env.prod')
 
     def run(self) -> bool:
