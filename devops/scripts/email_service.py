@@ -1,20 +1,14 @@
 import smtplib
-from dotenv import load_dotenv
 from email.mime.text import MIMEText
+from dotenv import load_dotenv
 from email.mime.multipart import MIMEMultipart
-from email.utils import formataddr
 import os
-from logging_config import logger
 
 load_dotenv(dotenv_path=".env.test")
-
-
-
 def send_email(subject, body, to_addresses):
-    logger.info("email", os.getenv("EMAIL_USERNAME"))
     """Send an email notification."""
-    from_email = os.getenv("EMAIL_USERNAME")
-    from_password = os.getenv("EMAIL_PASSWORD")
+    from_email = os.getenv("EMAIL_USERNAME")  
+    from_password = os.getenv("EMAIL_PASSWORD")  
 
     # Set up the MIME
     msg = MIMEMultipart()
@@ -22,21 +16,19 @@ def send_email(subject, body, to_addresses):
     msg['To'] = ", ".join(to_addresses)
     msg['Subject'] = subject
 
-    # Attach the body to the email with UTF-8 encoding
-    msg.attach(MIMEText(body, 'plain', _charset='utf-8'))
+    # Attach the body to the email
+    msg.attach(MIMEText(body, 'plain'))
 
     # SMTP server configuration (e.g., Gmail)
     smtp_server = "smtp.gmail.com"
     smtp_port = 587
 
     try:
-        logger.info("Connecting to SMTP server...")
         # Connect to the server and send the email
         with smtplib.SMTP(smtp_server, smtp_port) as server:
             server.starttls()  # Secure the connection
             server.login(from_email, from_password)
-            logger.info(f"Logged in to the SMTP server with {from_email}")
             server.sendmail(from_email, to_addresses, msg.as_string())
-        logger.info(f"Email sent successfully to {', '.join(to_addresses)}")
+        print(f"Email sent successfully to {', '.join(to_addresses)}")
     except Exception as e:
-        logger.error(f"Failed to send email: {e}")
+        print(f"Failed to send email: {e}")
