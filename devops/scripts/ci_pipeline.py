@@ -195,27 +195,76 @@ def load_environment(env_file):
     os.environ['ENV'] = environment
     
     return environment
-
 def cleanup_old_prod_containers(service_dir):
     """Clean up old production Docker containers while keeping the new ones running."""
     try:
-        # Get list of running containers
-        result = run_subprocess(['docker', 'ps', '--format', '{{.Names}}'], check=True)
-        running_containers = result.strip().split('\n')
+        # Get list of running containers using docker-compose
+        result = run_subprocess(
+            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', '.env.prod', 'ps', '-q'],
+            cwd=service_dir,
+            check=True
+        )
         
-        # Get current production container names from environment
-        current_backend_name = os.getenv('BILLING_BACKEND_NAME', 'billing-backend')
-        current_db_name = os.getenv('BILLING_DB_NAME', 'billing-db')
-        
-        # Find and stop old production containers
-        for container in running_containers:
-            if ('billing-backend' in container or 'billing-db' in container) and \
-               container not in [current_backend_name, current_db_name]:
-                logger.info(f"Stopping old production container: {container}")
-                run_subprocess(['docker', 'stop', container], check=False)
-                run_subprocess(['docker', 'rm', container], check=False)
+        if not result:
+            logger.info("No old containers found to clean up.")
+            return
+            
+        # Stop and remove old containers using docker-compose
+        run_subprocess(
+            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', '.env.prod', 'down'],
+            cwd=service_dir,
+            check=False
+        )
         
         logger.info("Cleaned up old production containers.")
+    except Exception as e:
+        logger.error(f"Error during production cleanup: {e}")
+
+def get_running_containers_by_ports(backend_ports):
+    """Get running containers that use specific backend ports."""
+    try:
+        # Get container details including port mappings
+        result = run_subprocess(
+            ['docker', 'ps', '--format', '{{.Names}}\t{{.Ports}}'],
+            check=True
+        )
+        containers = []
+        for line in result.split('\n'):
+            if not line:
+                continue
+            name, ports = line.split('\t')
+            if any(str(port) in ports for port in backend_ports):
+                containers.append(name)
+        return containers
+    except Exception as e:
+        logger.error(f"Error getting running containers: {e}")
+        return []
+
+def cleanup_old_prod_containers(old_backend_ports):
+    """Clean up old production Docker containers after new deployment is verified."""
+    try:
+        # Get list of containers using the old ports
+        old_containers = get_running_containers_by_ports(old_backend_ports)
+        if not old_containers:
+            logger.info("No old containers found to clean up.")
+            return
+
+        # Stop and remove containers
+        for container in old_containers:
+            try:
+                logger.info(f"Stopping old container: {container}")
+                run_subprocess(['docker', 'stop', container], check=False)
+                logger.info(f"Removing old container: {container}")
+                run_subprocess(['docker', 'rm', container], check=False)
+            except Exception as e:
+                logger.error(f"Error removing container {container}: {e}")
+                continue
+
+        # Clean up unused networks
+        logger.info("Cleaning up unused networks...")
+        run_subprocess(['docker', 'network', 'prune', '-f'], check=False)
+        
+        logger.info("Cleaned up old production containers and networks.")
     except Exception as e:
         logger.error(f"Error during production cleanup: {e}")
 
@@ -229,9 +278,15 @@ def main(rollback=False, env_suffix=None):
 
         os.environ["ENV_SUFFIX"] = env_suffix
 
-        # Load test environment
+        # Store current production ports before finding new ones
+        old_billing_ports = [int(os.getenv('BILLING_BACKEND_PORT', '8080')), 
+                           int(os.getenv('BILLING_DB_PORT', '3307'))]
+        old_weight_ports = [int(os.getenv('WEIGHT_BACKEND_PORT', '8081')), 
+                          int(os.getenv('WEIGHT_DB_PORT', '3306'))]
+
+        # Load test environment and run tests
         environment = load_environment(".env.test")
-        logger.info(f"Loaded test environment variables:")
+        logger.info("Loaded test environment variables:")
         log_environment_variables()
 
         billing_service_dir = REPO_DIR / 'billing'
@@ -255,22 +310,27 @@ def main(rollback=False, env_suffix=None):
 
         logger.info("Running tests in the test environment...")
         
-        # Clean up only test containers after testing
+        # Clean up test containers
         cleanup_test_containers(billing_service_dir)
         cleanup_test_containers(weight_service_dir)
         
         # Load production environment
         environment = load_environment(".env.prod")
-        logger.info(f"Loaded production environment variables:")
+        logger.info("Loaded production environment variables:")
         log_environment_variables()
         
-        logger.info(f"Deploying to production environment...")
+        # Deploy new production containers with new ports
+        logger.info("Deploying new production environment...")
         blue_green_deploy(target_prod_dir / 'billing', environment, 'billing')
         blue_green_deploy(target_prod_dir / 'weight', environment, 'weight')
+
+        # Verify new deployment is healthy
+        check_container_health(target_prod_dir / 'billing')
+        check_container_health(target_prod_dir / 'weight')
         
-        # Only clean up old production containers after new ones are running
-        cleanup_old_prod_containers(target_prod_dir / 'billing')
-        cleanup_old_prod_containers(target_prod_dir / 'weight')
+        # Only after new deployment is verified, clean up old containers
+        logger.info("New deployment verified. Cleaning up old production containers...")
+        cleanup_old_prod_containers(old_billing_ports + old_weight_ports)
         
         logger.info(f"CI pipeline completed successfully in {environment} environment.")
         
@@ -287,6 +347,5 @@ def main(rollback=False, env_suffix=None):
     except Exception as e:
         logger.error(f"Error: {e}")
         raise
-
 if __name__ == '__main__':
     main()
