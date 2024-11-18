@@ -349,220 +349,494 @@
 #         raise
 # if __name__ == '__main__':
 #     main()
-import os
-import subprocess
-import time
-from datetime import datetime
-from pathlib import Path
-from typing import List
-from logging_config import logger
-from concurrent.futures import ThreadPoolExecutor
+# import os
+# import subprocess
+# import time
+# from datetime import datetime
+# from pathlib import Path
+# from typing import List
+# from logging_config import logger
+# from concurrent.futures import ThreadPoolExecutor
 
-class DeploymentError(Exception):
-    """Custom exception for deployment errors"""
+# class DeploymentError(Exception):
+#     """Custom exception for deployment errors"""
+#     pass
+
+
+# def run_command(command: List[str], cwd: Path = None, check: bool = True) -> str:
+#     """
+#     Execute a shell command and return its output.
+#     """
+#     try:
+#         result = subprocess.run(
+#             command,
+#             cwd=cwd,
+#             check=check,
+#             capture_output=True,
+#             text=True
+#         )
+#         return result.stdout.strip()
+#     except subprocess.CalledProcessError as e:
+#         logger.error(f"Command failed: {' '.join(command)}")
+#         logger.error(f"Error output: {e.stderr}")
+#         if check:
+#             raise DeploymentError(f"Command failed: {e.stderr}")
+#         return ""
+
+
+# class DockerService:
+#     def __init__(self, service_dir: Path, service_name: str, env_file: str, is_production: bool = False):
+#         self.service_dir = service_dir
+#         self.service_name = service_name
+#         self.env_file = env_file
+#         self.is_production = is_production
+#         self.env_file_path = Path("/app") / self.env_file
+
+#         self.compose_cmd = [
+#             'docker-compose',
+#             '-f', str(service_dir / 'docker-compose.yml'),
+#             '--env-file', str(self.env_file_path)
+#         ]
+
+#     def build(self, project_name: str) -> None:
+#         """Build the Docker images"""
+#         logger.info(f"Building {self.service_name} with project name {project_name}")
+#         run_command([*self.compose_cmd, '-p', project_name, 'build', '--no-cache'], self.service_dir)
+
+#     def start(self, project_name: str) -> None:
+#         """Start the containers"""
+#         logger.info(f"Starting {self.service_name} with project name {project_name}")
+#         run_command([*self.compose_cmd, '-p', project_name, 'up', '-d'], self.service_dir)
+
+#     def stop(self, project_name: str) -> None:
+#         """Stop the containers"""
+#         logger.info(f"Stopping {self.service_name} with project name {project_name}")
+#         run_command([*self.compose_cmd, '-p', project_name, 'down'], self.service_dir, check=False)
+
+#     def is_healthy(self, project_name: str) -> bool:
+#         """Check if containers are healthy"""
+#         time.sleep(10)
+#         result = run_command([*self.compose_cmd, '-p', project_name, 'ps'], self.service_dir)
+#         return '(healthy)' in result and 'Exit' not in result
+
+#     def get_container_names(self, project_name: str) -> List[str]:
+#         """Get list of container names for the service"""
+#         return run_command(
+#             ['docker', 'ps', '--filter', f'name={project_name}', '--format', '{{.Names}}']
+#         ).splitlines()
+
+
+# class Deployment:
+#     def __init__(self, repo_url: str, base_dir: Path):
+#         self.repo_url = repo_url
+#         self.base_dir = base_dir
+#         self.repo_dir = base_dir / "gan-shmuel"
+#         self.timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+
+#     def clone_repo(self) -> None:
+#         """Clone or update the repository"""
+#         if not self.repo_dir.exists():
+#             logger.info("Cloning repository...")
+#             run_command(['git', 'clone', self.repo_url, str(self.repo_dir)])
+#         else:
+#             logger.info("Updating repository...")
+#             run_command(['git', 'fetch'], self.repo_dir)
+#             run_command(['git', 'reset', '--hard', 'origin/master'], self.repo_dir)
+
+#     def run_tests(self, service_dir: Path) -> bool:
+#         """Run tests for a service"""
+#         logger.info(f"Running tests for {service_dir.name}")
+#         try:
+#             test_dir = service_dir / 'tests'
+#             if test_dir.exists():
+#                 result = run_command(['pytest', str(test_dir), '-v'], service_dir)
+#                 logger.info(f"Test results: {result}")
+#                 return 'failed' not in result.lower()
+#             logger.warning(f"No tests found in {test_dir}")
+#             return True
+#         except Exception as e:
+#             logger.error(f"Tests failed: {e}")
+#             return False
+
+#     def deploy_service(self, service: DockerService) -> bool:
+#         """Deploy the service to test environment and run tests"""
+#         try:
+#             # In the test environment, the service name does not need to be renamed
+#             new_project = f"{service.service_name}_test"
+#             service.build(new_project)
+#             service.start(new_project)
+
+#             # Run tests after deploying to test environment
+#             logger.info(f"New version of {service.service_name} deployed successfully to test environment.")
+#             # return self.run_tests(service.service_dir)
+        
+#         except Exception as e:
+#             logger.error(f"Deployment failed for {service.service_name}: {e}")
+#             service.stop(new_project)
+#             return False
+
+#     def deploy_to_prod(self, service: DockerService) -> bool:
+#         """Deploy the service to production environment"""
+#         logger.info(f"Deploying {service.service_name} to production")
+#         # In the production environment, ensure the project name is renamed
+#         if service.is_production:
+#             new_project = f"{service.service_name}_prod"
+#         else:
+#             new_project = f"{service.service_name}_test"  # for test environment use the same project name
+#         service.build(new_project)
+#         service.start(new_project)
+#         return True
+
+#     def run(self) -> bool:
+#         """Run the complete CI/CD pipeline"""
+#         try:
+#             logger.info("Starting CI/CD pipeline")
+            
+#             # Clone/update repository
+#             self.clone_repo()
+
+#             # Define services to deploy
+#             services = [
+#                 ('billing', '/app/.env.test', False),  # No need for production flag in test environment
+#                 ('weight', '/app/.env.test', False)
+#             ]
+
+#             # Deploy both services to test environment in parallel
+#             with ThreadPoolExecutor() as executor:
+#                 deploy_results = list(executor.map(
+#                     lambda s: self.deploy_service(DockerService(self.repo_dir / s[0], s[0], s[1], s[2])), 
+#                     services
+#                 ))
+
+#             # Check if all tests passed for both services
+#             if all(deploy_results):
+#                 logger.info("All services passed test successfully. Deploying to production.")
+
+#                 # Deploy both services to production in parallel (with renaming in production)
+#                 with ThreadPoolExecutor() as executor:
+#                     executor.map(
+#                         lambda s: self.deploy_to_prod(DockerService(self.repo_dir / s[0], s[0], '.env.prod', True)),
+#                         services
+#                     )
+
+#                 # Stop test containers after deployment
+#                 for service_name, _, _ in services:
+#                     service = DockerService(self.repo_dir / service_name, service_name, '/app/.env.test')
+#                     service.stop(f"{service_name}_test")
+
+#                 logger.info("CI/CD pipeline completed successfully")
+#                 return True
+#             else:
+#                 logger.error("Deployment to test environment failed. Rolling back.")
+#                 # Stop all services if any test fails
+#                 with ThreadPoolExecutor() as executor:
+#                     executor.map(
+#                         lambda s: DockerService(self.repo_dir / s[0], s[0], '/app/.env.test').stop(f"{s[0]}_test"),
+#                         services
+#                     )
+#                 return False
+
+#         except Exception as e:
+#             logger.error(f"CI/CD pipeline failed: {e}")
+#             return False
+
+
+# def main(rollback=False):
+#     """Main function to execute the CI/CD pipeline"""
+#     try:
+#         # Configuration
+#         REPO_URL = "https://github.com/AM8151/gan-shmuel.git"
+#         BASE_DIR = Path(__file__).parent 
+
+#         # Create and run deployment
+#         deployment = Deployment(REPO_URL, BASE_DIR)
+
+#         if rollback:
+#             logger.info("Rollback triggered")
+#             # Implement rollback logic here if necessary
+
+#         success = deployment.run()
+
+#         # Exit with appropriate status code
+#         return success
+
+#     except Exception as e:
+#         logger.error(f"CI/CD pipeline failed: {e}")
+#         return False
+
+
+# if __name__ == "__main__":
+#     main()
+import subprocess
+import os
+from logging_config import logger
+from pathlib import Path
+from shutil import copyfile
+from dotenv import load_dotenv
+import time
+
+load_dotenv(dotenv_path="env.test")
+
+# Constants
+CURRENT_DIR = Path(__file__).parent
+REPO_DIR = CURRENT_DIR / "gan-shmuel"
+GITHUB_REPO = "https://github.com/AM8151/gan-shmuel.git"
+
+class CloneRepositoryError(Exception):
     pass
 
 
-def run_command(command: List[str], cwd: Path = None, check: bool = True) -> str:
-    """
-    Execute a shell command and return its output.
-    """
-    try:
-        result = subprocess.run(
-            command,
-            cwd=cwd,
-            check=check,
-            capture_output=True,
-            text=True
-        )
-        return result.stdout.strip()
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Command failed: {' '.join(command)}")
-        logger.error(f"Error output: {e.stderr}")
-        if check:
-            raise DeploymentError(f"Command failed: {e.stderr}")
-        return ""
-
-
-class DockerService:
-    def __init__(self, service_dir: Path, service_name: str, env_file: str, is_production: bool = False):
-        self.service_dir = service_dir
-        self.service_name = service_name
-        self.env_file = env_file
-        self.is_production = is_production
-        self.env_file_path = Path("/app") / self.env_file
-
-        self.compose_cmd = [
-            'docker-compose',
-            '-f', str(service_dir / 'docker-compose.yml'),
-            '--env-file', str(self.env_file_path)
-        ]
-
-    def build(self, project_name: str) -> None:
-        """Build the Docker images"""
-        logger.info(f"Building {self.service_name} with project name {project_name}")
-        run_command([*self.compose_cmd, '-p', project_name, 'build', '--no-cache'], self.service_dir)
-
-    def start(self, project_name: str) -> None:
-        """Start the containers"""
-        logger.info(f"Starting {self.service_name} with project name {project_name}")
-        run_command([*self.compose_cmd, '-p', project_name, 'up', '-d'], self.service_dir)
-
-    def stop(self, project_name: str) -> None:
-        """Stop the containers"""
-        logger.info(f"Stopping {self.service_name} with project name {project_name}")
-        run_command([*self.compose_cmd, '-p', project_name, 'down'], self.service_dir, check=False)
-
-    def is_healthy(self, project_name: str) -> bool:
-        """Check if containers are healthy"""
-        time.sleep(10)
-        result = run_command([*self.compose_cmd, '-p', project_name, 'ps'], self.service_dir)
-        return '(healthy)' in result and 'Exit' not in result
-
-    def get_container_names(self, project_name: str) -> List[str]:
-        """Get list of container names for the service"""
-        return run_command(
-            ['docker', 'ps', '--filter', f'name={project_name}', '--format', '{{.Names}}']
-        ).splitlines()
-
-
-class Deployment:
-    def __init__(self, repo_url: str, base_dir: Path):
-        self.repo_url = repo_url
-        self.base_dir = base_dir
-        self.repo_dir = base_dir / "gan-shmuel"
-        self.timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-
-    def clone_repo(self) -> None:
-        """Clone or update the repository"""
-        if not self.repo_dir.exists():
-            logger.info("Cloning repository...")
-            run_command(['git', 'clone', self.repo_url, str(self.repo_dir)])
+class GitHandler:
+    """Handles Git operations like cloning, pulling, and rolling back commits."""
+    
+    @staticmethod
+    def clone_repository():
+        """Clones the Git repository if it doesn't exist locally or initializes it if mounted."""
+        if not REPO_DIR.exists():
+            logger.info("Repository not found. Cloning repository...")
+            try:
+                subprocess.run(['git', 'clone', GITHUB_REPO, str(REPO_DIR)], check=True)
+                logger.info(f"Successfully cloned the repository into {REPO_DIR}")
+            except subprocess.CalledProcessError as e:
+                logger.error(f"Failed to clone the repository: {e}")
+                raise CloneRepositoryError("Failed to clone the repository")
         else:
-            logger.info("Updating repository...")
-            run_command(['git', 'fetch'], self.repo_dir)
-            run_command(['git', 'reset', '--hard', 'origin/master'], self.repo_dir)
+            logger.info("Repository exists. Pulling latest changes...")
+            GitHandler.pull_latest_code()
 
-    def run_tests(self, service_dir: Path) -> bool:
-        """Run tests for a service"""
-        logger.info(f"Running tests for {service_dir.name}")
+    @staticmethod
+    def pull_latest_code():
+        """Pulls the latest code from the GitHub repository (from the master branch)."""
+        logger.info("Pulling latest code from GitHub...")
         try:
-            test_dir = service_dir / 'tests'
-            if test_dir.exists():
-                result = run_command(['pytest', str(test_dir), '-v'], service_dir)
-                logger.info(f"Test results: {result}")
-                return 'failed' not in result.lower()
-            logger.warning(f"No tests found in {test_dir}")
-            return True
-        except Exception as e:
-            logger.error(f"Tests failed: {e}")
-            return False
+            subprocess.run(['git', 'checkout', 'master'], cwd=REPO_DIR, check=True)
+            subprocess.run(['git', 'pull'], cwd=REPO_DIR, check=True)
+            logger.info("Successfully pulled latest code from master branch")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to pull latest code from master: {e}")
+            raise
 
-    def deploy_service(self, service: DockerService) -> bool:
-        """Deploy the service to test environment and run tests"""
+    @staticmethod
+    def rollback():
+        """Rollback to the previous commit in the repository."""
         try:
-            # In the test environment, the service name does not need to be renamed
-            new_project = f"{service.service_name}_test"
-            service.build(new_project)
-            service.start(new_project)
+            logger.info("Rolling back to the previous commit...")
+            subprocess.run(['git', 'reset', '--hard', 'HEAD^'], cwd=REPO_DIR, check=True)
+            logger.info("Successfully rolled back to the previous commit")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to rollback to the previous commit: {e}")
+            raise
 
-            # Run tests after deploying to test environment
-            logger.info(f"New version of {service.service_name} deployed successfully to test environment.")
-            # return self.run_tests(service.service_dir)
-        
-        except Exception as e:
-            logger.error(f"Deployment failed for {service.service_name}: {e}")
-            service.stop(new_project)
-            return False
 
-    def deploy_to_prod(self, service: DockerService) -> bool:
-        """Deploy the service to production environment"""
-        logger.info(f"Deploying {service.service_name} to production")
-        # In the production environment, ensure the project name is renamed
-        if service.is_production:
-            new_project = f"{service.service_name}_prod"
-        else:
-            new_project = f"{service.service_name}_test"  # for test environment use the same project name
-        service.build(new_project)
-        service.start(new_project)
-        return True
+class DockerHandler:
+    """Handles Docker Compose operations like building, deploying, and cleaning up containers."""
 
-    def run(self) -> bool:
-        """Run the complete CI/CD pipeline"""
+    @staticmethod
+    def copy_env_file(service_dir, environment):
+        """Copies the correct .env file based on the environment."""
+        env_file_map = {
+            'prod': '/app/.env.prod',
+            'test': '/app/.env.test',
+        }
+
+        env_file = env_file_map.get(environment)
+        if not env_file:
+            raise ValueError(f"Unknown environment: {environment}")
+
+        target_env_path = service_dir / f'.env.{environment}'
+        logger.info(f"Copying {env_file} to {target_env_path}...")
+        copyfile(env_file, target_env_path)
+        logger.info(f"Successfully copied {env_file} to {target_env_path}")
+
+    @staticmethod
+    def execute_docker_compose(commands, service_dir, environment):
+        """Executes docker-compose commands in the provided service directory."""
         try:
-            logger.info("Starting CI/CD pipeline")
+            DockerHandler.copy_env_file(service_dir, environment)
+            env_file = f'.env.{environment}'
+            logger.info(f"Running docker-compose: {' '.join(commands)}")
+
+            subprocess.run(
+                ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', env_file] + commands,
+                check=True,
+                timeout=300  # 5-minute timeout
+            )
+            logger.info(f"Successfully executed: {' '.join(commands)}")
+        except subprocess.TimeoutExpired:
+            logger.error("Docker compose command timed out. Cleaning up...")
+            DockerHandler.cleanup_containers(service_dir)
+            raise
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Error executing docker compose: {e}")
+            DockerHandler.cleanup_containers(service_dir)
+            raise
+
+    @staticmethod
+    def cleanup_containers(service_dir):
+        """Cleans up containers and networks created by docker-compose."""
+        try:
+            logger.info("Cleaning up containers and networks...")
+            subprocess.run(
+                ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'down', '--volumes', '--remove-orphans'],
+                check=False,
+                timeout=60
+            )
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Error during cleanup: {e}")
+
+    @staticmethod
+    def build_and_deploy(service_dir, environment, other_service_dir=None):
+        """Build and deploy Docker containers for the given service."""
+        try:
+            logger.info(f"Building and deploying service {service_dir} in {environment} environment...")
+            DockerHandler.execute_docker_compose(['build', '--no-cache'], service_dir, environment)
+            DockerHandler.execute_docker_compose(['up', '--build', '-d'], service_dir, environment)
+
+            # Zero downtime deployment strategy:
+            DockerHandler.zero_downtime_deployment(service_dir)
             
-            # Clone/update repository
-            self.clone_repo()
-
-            # Define services to deploy
-            services = [
-                ('billing', '/app/.env.test', False),  # No need for production flag in test environment
-                ('weight', '/app/.env.test', False)
-            ]
-
-            # Deploy both services to test environment in parallel
-            with ThreadPoolExecutor() as executor:
-                deploy_results = list(executor.map(
-                    lambda s: self.deploy_service(DockerService(self.repo_dir / s[0], s[0], s[1], s[2])), 
-                    services
-                ))
-
-            # Check if all tests passed for both services
-            if all(deploy_results):
-                logger.info("All services passed test successfully. Deploying to production.")
-
-                # Deploy both services to production in parallel (with renaming in production)
-                with ThreadPoolExecutor() as executor:
-                    executor.map(
-                        lambda s: self.deploy_to_prod(DockerService(self.repo_dir / s[0], s[0], '.env.prod', True)),
-                        services
-                    )
-
-                # Stop test containers after deployment
-                for service_name, _, _ in services:
-                    service = DockerService(self.repo_dir / service_name, service_name, '/app/.env.test')
-                    service.stop(f"{service_name}_test")
-
-                logger.info("CI/CD pipeline completed successfully")
-                return True
-            else:
-                logger.error("Deployment to test environment failed. Rolling back.")
-                # Stop all services if any test fails
-                with ThreadPoolExecutor() as executor:
-                    executor.map(
-                        lambda s: DockerService(self.repo_dir / s[0], s[0], '/app/.env.test').stop(f"{s[0]}_test"),
-                        services
-                    )
-                return False
-
         except Exception as e:
-            logger.error(f"CI/CD pipeline failed: {e}")
+            logger.error(f"Build and deploy failed for {service_dir}: {e}")
+            DockerHandler.cleanup_containers(service_dir)
+            if other_service_dir:
+                DockerHandler.cleanup_containers(other_service_dir)
+            raise
+
+    @staticmethod
+    def zero_downtime_deployment(service_dir):
+        """Performs zero-downtime deployment by ensuring new containers are healthy before shutting down old ones."""
+        logger.info("Starting zero-downtime deployment...")
+
+        # Check for any running containers
+        result = subprocess.run(
+            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'ps', '--services', '--filter', 'status=running'],
+            capture_output=True, text=True, check=True
+        )
+        running_services = result.stdout.splitlines()
+        
+        # Start new containers in detached mode
+        logger.info("Starting new containers...")
+        subprocess.run(
+            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'up', '--build', '--detach'],
+            check=True
+        )
+        
+        # Check if the new containers are healthy
+        logger.info("Checking health of new containers...")
+        DockerHandler.check_container_health(service_dir)
+
+        # Stop old containers
+        logger.info("Stopping old containers...")
+        subprocess.run(
+            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'stop'] + running_services,
+            check=True
+        )
+
+        # Clean up old containers
+        logger.info("Cleaning up old containers...")
+        subprocess.run(
+            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'rm', '--force'] + running_services,
+            check=True
+        )
+        
+        logger.info("Zero-downtime deployment completed.")
+
+    @staticmethod
+    def check_container_health(service_dir, retries=5, delay=10):
+        """Checks if all containers are healthy and running."""
+        for _ in range(retries):
+            result = subprocess.run(
+                ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'ps'],
+                capture_output=True, text=True, check=True
+            )
+
+            if 'Exit' in result.stdout:
+                logger.error("One or more containers have exited unexpectedly")
+                subprocess.run(['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'logs'], check=False)
+                raise RuntimeError("Container startup failed")
+
+            logger.info("Containers are healthy.")
+            return True
+            time.sleep(delay)
+
+        logger.error("Containers did not become healthy within retries.")
+        return False
+
+
+class TestHandler:
+    """Handles test suite execution and checks if tests passed."""
+
+    @staticmethod
+    def run_tests(test_directory, rollback=False):
+        """Runs the test suite and checks if tests passed for a specific test directory."""
+        logger.info(f"Running tests from {test_directory}...")
+        result = subprocess.run(
+            ['pytest', test_directory, '--maxfail=1', '--disable-warnings', '-q'],
+            capture_output=True, text=True
+        )
+
+        if result.returncode == 0:
+            logger.info("Tests passed successfully!")
+            return True
+        else:
+            if not rollback:
+                GitHandler.rollback()
+            logger.error(f"Tests failed with exit code {result.returncode}")
+            logger.error(f"Test output: {result.stdout}\n{result.stderr}")
             return False
 
 
-def main(rollback=False):
-    """Main function to execute the CI/CD pipeline"""
-    try:
-        # Configuration
-        REPO_URL = "https://github.com/AM8151/gan-shmuel.git"
-        BASE_DIR = Path(__file__).parent 
+class Pipeline:
+    """Main pipeline class that orchestrates the steps."""
 
-        # Create and run deployment
-        deployment = Deployment(REPO_URL, BASE_DIR)
+    def __init__(self, environment='test'):
+        self.environment = environment
 
-        if rollback:
-            logger.info("Rollback triggered")
-            # Implement rollback logic here if necessary
+    def run(self, rollback=False):
+        """Run the entire pipeline: clone repo, build, deploy, run tests, and deploy to production."""
+        try:
+            # Step 1: Clone and pull the latest code
+            GitHandler.clone_repository()
 
-        success = deployment.run()
+            if rollback:
+                GitHandler.rollback()
 
-        # Exit with appropriate status code
-        return success
+            # Step 2: Build and deploy both services in the test environment
+            logger.info("Deploying services in test environment...")
+            DockerHandler.build_and_deploy(REPO_DIR / 'billing', self.environment)
+            DockerHandler.build_and_deploy(REPO_DIR / 'weight', self.environment, other_service_dir=REPO_DIR / 'billing')
 
-    except Exception as e:
-        logger.error(f"CI/CD pipeline failed: {e}")
-        return False
+            # Step 3: Run tests
+            logger.info("Running tests for billing service...")
+            if not TestHandler.run_tests(str(REPO_DIR / 'billing' / 'tests'), rollback):
+                raise RuntimeError("Tests failed in the billing service. Aborting pipeline.")
+
+            logger.info("Running tests for weight service...")
+            if not TestHandler.run_tests(str(REPO_DIR / 'weight' / 'tests'), rollback):
+                raise RuntimeError("Tests failed in the weight service. Aborting pipeline.")
+
+            # Step 4: Cleanup test environment before deploying to production
+            logger.info("Cleaning up test environment...")
+            DockerHandler.cleanup_containers(REPO_DIR / 'billing')
+            DockerHandler.cleanup_containers(REPO_DIR / 'weight')
+
+            # Step 5: Deploy to production environment with zero-downtime
+            logger.info("Deploying to production environment...")
+            os.environ['ENV'] = 'prod'
+            DockerHandler.build_and_deploy(REPO_DIR / 'billing', 'prod')
+            DockerHandler.build_and_deploy(REPO_DIR / 'weight', 'prod', other_service_dir=REPO_DIR / 'billing')
+
+            logger.info(f"CI pipeline completed successfully in {self.environment} and prod environments.")
+            
+        except Exception as e:
+            logger.error(f"CI pipeline failed: {e}")
+            raise
+
+
+def main():
+    """Main entry point to run the pipeline."""
+    pipeline = Pipeline(environment=os.getenv('ENV', 'test'))
+    pipeline.run()
 
 
 if __name__ == "__main__":
