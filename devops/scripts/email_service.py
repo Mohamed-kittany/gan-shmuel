@@ -10,7 +10,7 @@ from logging_config import logger
 load_dotenv(dotenv_path=".env.test")
 
 
-def send_email(subject, body, to_addresses):
+def send_email(subject, body, to_addresses, cc_addresses=None):
     logger.info(os.getenv("EMAIL_USERNAME"))
     """Send an email notification."""
     from_email = os.getenv("EMAIL_USERNAME")
@@ -23,10 +23,49 @@ def send_email(subject, body, to_addresses):
     msg = MIMEMultipart()
     msg['From'] = from_email
     msg['To'] = ", ".join(to_addresses)
+    if cc_addresses:
+        msg['Cc'] = ", ".join(cc_addresses)
     msg['Subject'] = subject
 
-    # Attach the body to the email with UTF-8 encoding
-    msg.attach(MIMEText(body, 'plain', _charset='utf-8'))
+    # Add email body as HTML with emojis and styling
+    html_body = f"""
+    <html>
+        <head>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                }}
+                h2 {{
+                    color: #4CAF50;
+                }}
+                p {{
+                    color: #333;
+                }}
+                .footer {{
+                    margin-top: 20px;
+                    font-size: 0.9em;
+                    color: #777;
+                }}
+                .success {{
+                    color: #4CAF50;
+                    font-weight: bold;
+                }}
+                .error {{
+                    color: #F44336;
+                    font-weight: bold;
+                }}
+            </style>
+        </head>
+        <body>
+            <h2>📣 {subject}</h2>
+            <p>{body}</p>
+            <p class="success">✔️ הכל בוצע בהצלחה!</p>
+            <p class="footer">💻 נשלח אוטומטית על ידי מערכת ה-CI Pipeline</p>
+        </body>
+    </html>
+    """
+    msg.attach(MIMEText(html_body, 'html', _charset='utf-8'))
 
     # Attach the log file
     try:
@@ -50,7 +89,7 @@ def send_email(subject, body, to_addresses):
             server.starttls()  # Secure the connection
             server.login(from_email, from_password)
             logger.info(f"Logged in to the SMTP server with {from_email}")
-            server.sendmail(from_email, to_addresses, msg.as_string())
+            server.sendmail(from_email, to_addresses + (cc_addresses or []), msg.as_string())
         logger.info(f"Email sent successfully to {', '.join(to_addresses)}")
     except Exception as e:
         logger.error(f"Failed to send email: {e}")
