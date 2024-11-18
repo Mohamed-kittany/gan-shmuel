@@ -352,12 +352,11 @@
 import os
 import subprocess
 import time
-import shutil
 from datetime import datetime
-from pathlib import Path  # Missing import added here
+from pathlib import Path
 from typing import List
 from logging_config import logger
-
+from concurrent.futures import ThreadPoolExecutor
 
 class DeploymentError(Exception):
     """Custom exception for deployment errors"""
@@ -386,14 +385,13 @@ def run_command(command: List[str], cwd: Path = None, check: bool = True) -> str
 
 
 class DockerService:
-    def __init__(self, service_dir: Path, service_name: str, env_file: str):
+    def __init__(self, service_dir: Path, service_name: str, env_file: str, is_production: bool = False):
         self.service_dir = service_dir
         self.service_name = service_name
         self.env_file = env_file
-        # Update env_file to be the absolute path, assuming it's in the /app directory
+        self.is_production = is_production
         self.env_file_path = Path("/app") / self.env_file
 
-        # docker-compose command
         self.compose_cmd = [
             'docker-compose',
             '-f', str(service_dir / 'docker-compose.yml'),
@@ -417,7 +415,7 @@ class DockerService:
 
     def is_healthy(self, project_name: str) -> bool:
         """Check if containers are healthy"""
-        time.sleep(10)  # Give containers time to start
+        time.sleep(10)
         result = run_command([*self.compose_cmd, '-p', project_name, 'ps'], self.service_dir)
         return '(healthy)' in result and 'Exit' not in result
 
@@ -460,38 +458,34 @@ class Deployment:
             logger.error(f"Tests failed: {e}")
             return False
 
-    def deploy_service(self, service: DockerService, env_file: str) -> bool:
-        """Deploy the service in test environment first and then prod if successful"""
+    def deploy_service(self, service: DockerService) -> bool:
+        """Deploy the service to test environment and run tests"""
         try:
-            # Deploy new version with temporary name to test environment first
-            new_project = f"{service.service_name}_new"
+            # In the test environment, the service name does not need to be renamed
+            new_project = f"{service.service_name}_test"
             service.build(new_project)
             service.start(new_project)
 
             # Run tests after deploying to test environment
             logger.info(f"New version of {service.service_name} deployed successfully to test environment.")
-            # if not self.run_tests(service.service_dir):
-            #     raise DeploymentError(f"Tests failed for {service.service_name} in test environment")
-
-            # Stop the test environment (old project) after tests pass
-            logger.info(f"Tests passed for {service.service_name}, stopping test containers.")
-            service.stop(new_project)  # Stop the new test containers
-
-            logger.info(f"Successfully deployed and tested {service.service_name} in the test environment.")
-            return True
-
+            return self.run_tests(service.service_dir)
+        
         except Exception as e:
             logger.error(f"Deployment failed for {service.service_name}: {e}")
-            # Cleanup failed deployment in test environment
             service.stop(new_project)
             return False
 
     def deploy_to_prod(self, service: DockerService) -> bool:
         """Deploy the service to production environment"""
-        # Deploy to prod with .env.prod
         logger.info(f"Deploying {service.service_name} to production")
-        service.env_file = '.env.prod'  # Ensure the correct environment file is used for prod
-        return self.deploy_service(service, '.env.prod')
+        # In the production environment, ensure the project name is renamed
+        if service.is_production:
+            new_project = f"{service.service_name}_prod"
+        else:
+            new_project = f"{service.service_name}_test"  # for test environment use the same project name
+        service.build(new_project)
+        service.start(new_project)
+        return True
 
     def run(self) -> bool:
         """Run the complete CI/CD pipeline"""
@@ -501,27 +495,46 @@ class Deployment:
             # Clone/update repository
             self.clone_repo()
 
-            # Define services
+            # Define services to deploy
             services = [
-                ('billing', '/app/.env.test'),  # Start with .env.test for testing
-                ('weight', '/app/.env.test')    # Start with .env.test for testing
+                ('billing', '/app/.env.test', False),  # No need for production flag in test environment
+                ('weight', '/app/.env.test', False)
             ]
 
-            # Test and deploy each service
-            for service_name, env_file in services:
-                service_dir = self.repo_dir / service_name
-                service = DockerService(service_dir, service_name, env_file)
+            # Deploy both services to test environment in parallel
+            with ThreadPoolExecutor() as executor:
+                deploy_results = list(executor.map(
+                    lambda s: self.deploy_service(DockerService(self.repo_dir / s[0], s[0], s[1], s[2])), 
+                    services
+                ))
 
-                # Deploy the service to test environment first
-                if not self.deploy_service(service, env_file):
-                    raise DeploymentError(f"Deployment to test environment failed for {service_name}")
+            # Check if all tests passed for both services
+            if all(deploy_results):
+                logger.info("All services passed test successfully. Deploying to production.")
 
-                # If tests pass, deploy to prod environment
-                if not self.deploy_to_prod(service):
-                    raise DeploymentError(f"Deployment to production failed for {service_name}")
+                # Deploy both services to production in parallel (with renaming in production)
+                with ThreadPoolExecutor() as executor:
+                    executor.map(
+                        lambda s: self.deploy_to_prod(DockerService(self.repo_dir / s[0], s[0], '.env.prod', True)),
+                        services
+                    )
 
-            logger.info("CI/CD pipeline completed successfully")
-            return True
+                # Stop test containers after deployment
+                for service_name, _, _ in services:
+                    service = DockerService(self.repo_dir / service_name, service_name, '/app/.env.test')
+                    service.stop(f"{service_name}_test")
+
+                logger.info("CI/CD pipeline completed successfully")
+                return True
+            else:
+                logger.error("Deployment to test environment failed. Rolling back.")
+                # Stop all services if any test fails
+                with ThreadPoolExecutor() as executor:
+                    executor.map(
+                        lambda s: DockerService(self.repo_dir / s[0], s[0], '/app/.env.test').stop(f"{s[0]}_test"),
+                        services
+                    )
+                return False
 
         except Exception as e:
             logger.error(f"CI/CD pipeline failed: {e}")
@@ -533,7 +546,7 @@ def main(rollback=False):
     try:
         # Configuration
         REPO_URL = "https://github.com/AM8151/gan-shmuel.git"
-        BASE_DIR = Path(__file__).parent 
+        BASE_DIR = Path(__file__).parent / 'dev'
 
         # Create and run deployment
         deployment = Deployment(REPO_URL, BASE_DIR)
@@ -541,7 +554,6 @@ def main(rollback=False):
         if rollback:
             logger.info("Rollback triggered")
             # Implement rollback logic here if necessary
-            # For example, stop and re-deploy previous version
 
         success = deployment.run()
 
