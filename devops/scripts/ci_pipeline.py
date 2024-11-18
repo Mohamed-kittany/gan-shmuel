@@ -573,7 +573,7 @@ def execute_docker_compose(service_dir, commands, environment):
     """Run Docker Compose commands."""
     try:
         # manage_env_file(service_dir, environment)
-        env_file = f"/app/.env.prod"
+        env_file = f"/app/.env.{environment}"
         logger.info(str(service_dir / 'docker-compose.yml'))
         run_subprocess(
             ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', env_file] + commands,
@@ -667,7 +667,10 @@ def rollback_func():
     except subprocess.CalledProcessError as e:
         logger.error(f"Failed to rollback to the previous commit: {e}")
         raise
-
+def log_environment_variables():
+        logger.info("Current environment variables:")
+        for key, value in os.environ.items():
+            logger.info(f"{key}: {value}")
 def main(rollback=False, env_suffix=None):
     try:
         logger.info("Starting CI pipeline...")
@@ -683,6 +686,7 @@ def main(rollback=False, env_suffix=None):
         # environment = os.getenv('ENV', 'prod')
         environment='test'
         load_dotenv(dotenv_path="env.test")
+        log_environment_variables()
         # Define the folder paths based on environment suffix
         billing_service_dir = REPO_DIR / 'billing'
         weight_service_dir = REPO_DIR / 'weight'
@@ -717,10 +721,7 @@ def main(rollback=False, env_suffix=None):
         cleanup_containers(weight_service_dir, environment) 
         
         load_dotenv(dotenv_path="env.prod")
-        def log_environment_variables():
-            logger.info("Current environment variables:")
-            for key, value in os.environ.items():
-                logger.info(f"{key}: {value}")
+       
         log_environment_variables()
         # os.environ['ENV'] = 'prod'
         # environment = os.getenv('ENV', 'prod')
