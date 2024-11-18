@@ -256,9 +256,9 @@ def main(rollback=False):
             raise RuntimeError("Tests failed in the weight service. Aborting pipeline.")
         
         # Step 4: Clean up test environment before deploying to production
-        logger.info("Cleaning up test environment...")
-        cleanup_containers(REPO_DIR / 'billing')
-        cleanup_containers(REPO_DIR / 'weight')
+        # logger.info("Cleaning up test environment...")
+        # cleanup_containers(REPO_DIR / 'billing')
+        # cleanup_containers(REPO_DIR / 'weight')
         
         # Step 5: Deploy to production environment (if tests passed)
         logger.info("Deploying to production environment...")
