@@ -10,7 +10,7 @@ load_dotenv(dotenv_path=".env.test")
 
 
 def send_email(subject, body, to_addresses):
-    logger.info("email", os.getenv("EMAIL_USERNAME"))
+    logger.info( os.getenv("EMAIL_USERNAME"))
     """Send an email notification."""
     from_email = os.getenv("EMAIL_USERNAME")
     from_password = os.getenv("EMAIL_PASSWORD")
