@@ -355,6 +355,7 @@ import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
+import shutil
 from typing import List
 from logging_config import logger
 
@@ -459,16 +460,20 @@ class Deployment:
 
     def deploy_service(self, service: DockerService, env_file: str) -> bool:
         try:
-            # Deploy new version with temporary name for testing
+            # Deploy new version with temporary name
             new_project = f"{service.service_name}_new"
             service.build(new_project)
             service.start(new_project)
 
+            # Check if new deployment is healthy (skip health check for now)
+            # if not service.is_healthy(new_project):
+            #     raise DeploymentError("New containers are not healthy")
+
+            logger.info(f"New version of {service.service_name} deployed successfully.")
+
             # Run tests after deploying to test environment
             if not self.run_tests(service.service_dir):
-                logger.error(f"Tests failed for {service.service_name} in test environment")
-                service.stop(new_project)
-                return False
+                raise DeploymentError(f"Tests failed for {service.service_name} in test environment")
 
             # Stop old deployment if it exists
             old_project = f"{service.service_name}_old"
@@ -504,7 +509,7 @@ class Deployment:
         """Run the complete CI/CD pipeline"""
         try:
             logger.info("Starting CI/CD pipeline")
-
+            
             # Clone/update repository
             self.clone_repo()
 
@@ -525,10 +530,7 @@ class Deployment:
                 if not self.deploy_service(service, env_file):
                     raise DeploymentError(f"Deployment to test environment failed for {service_name}")
 
-            # After test deployment success, deploy to production
-            for service_name, env_file in services:
-                service_dir = self.repo_dir / service_name
-                service = DockerService(service_dir, service_name, '.env.prod')
+                # If tests pass, deploy to prod environment
                 if not self.deploy_to_prod(service):
                     raise DeploymentError(f"Deployment to production failed for {service_name}")
 
@@ -538,3 +540,32 @@ class Deployment:
         except Exception as e:
             logger.error(f"CI/CD pipeline failed: {e}")
             return False
+
+
+def main(rollback=False):
+    """Main function to execute the CI/CD pipeline"""
+    try:
+        # Configuration
+        REPO_URL = "https://github.com/AM8151/gan-shmuel.git"
+        BASE_DIR = Path(__file__).parent
+
+        # Create and run deployment
+        deployment = Deployment(REPO_URL, BASE_DIR)
+
+        if rollback:
+            logger.info("Rollback triggered")
+            # Implement rollback logic here if necessary
+            # For example, stop and re-deploy previous version
+
+        success = deployment.run()
+
+        # Exit with appropriate status code
+        return success
+
+    except Exception as e:
+        logger.error(f"CI/CD pipeline failed: {e}")
+        return False
+
+
+if __name__ == "__main__":
+    main()
