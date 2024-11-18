@@ -388,10 +388,10 @@ class DockerService:
         self.service_dir = service_dir
         self.service_name = service_name
         self.env_file = env_file
-        # Update env_file to be the absolute path, assuming it's in the /app directory
-        self.env_file_path = Path("/app") / self.env_file
+        # Set the correct path for the .env file based on the environment
+        self.env_file_path = Path("/app") / self.env_file  # Path should be set correctly
 
-        # docker-compose command
+        # Prepare the docker-compose command with env_file
         self.compose_cmd = [
             'docker-compose',
             '-f', str(service_dir / 'docker-compose.yml'),
@@ -501,8 +501,8 @@ class Deployment:
 
             # Define services
             services = [
-                ('billing', '.env.test'),  # Start with .env.test for testing
-                ('weight', '.env.test')    # Start with .env.test for testing
+                ('billing', '/app/.env.test'),  # Start with .env.test for testing
+                ('weight', '/app/.env.test')    # Start with .env.test for testing
             ]
 
             # Test and deploy each service
