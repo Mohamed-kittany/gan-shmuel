@@ -39,30 +39,30 @@ def create_truck():
         return jsonify({"error": "An unexpected error occurred"}), 500
 
 #PUT /truck/{id} can be used to update provider id
-@truck_bp.route('/truck/<int:provider_id>', methods=['PUT'])
-def update_provider(provider_id):
+@truck_bp.route('/truck/<id>', methods=['PUT'])
+def update_truck(id):
     """
-    Updates the name of an existing provider.
-    Expects JSON payload: { "name": <str> }
+    Updates the id of an existing truck.
+    Expects JSON payload: { "id": <str> }
     """
-    logger.info(f"Received request to update provider with ID: {provider_id}")
+    logger.info(f"Received request to update provider ID with ID: {id}")
     data = request.get_json()
-    name = data.get("name")
+    provider_id = data.get("provider_id")
     
-    if not name:
-        logger.error("Provider name is missing in the request.")
-        return jsonify({"error": "Provider name is required"}), 400
+    if not provider_id:
+        logger.error("Provider id is missing in the request.")
+        return jsonify({"error": "Provider id is required"}), 400
 
     try:
-        provider_service.update_provider(provider_id, name)
-        logger.info(f"Provider with ID: {provider_id} updated successfully to name: {name}.")
-        return jsonify({"message": "Provider updated successfully"}), 200
+        truck_service.update_truck(id, provider_id)
+        logger.info(f"Truck with ID: {id} updated successfully to provider id: {provider_id}.")
+        return jsonify({"message": "Truck updated successfully"}), 200
     except ValueError as ve:
-        logger.warning(f"Failed to update provider: {ve}")
+        logger.warning(f"Failed to update truck: {ve}")
         return jsonify({"error": str(ve)}), 404
     except Exception as e:
-        if "already exists" in str(e):
-            logger.warning(f"Attempt to use duplicate name for Provider ID: {provider_id}: {e}")
-            return jsonify({"error": "A provider with this name already exists."}), 409
-        logger.error(f"Error updating provider with ID: {provider_id}: {e}")
+        if "dosnt exists" in str(e):
+            logger.warning(f"This provider ID dose not exist you need to add it first: {provider_id}: {e}")
+            return jsonify({"error": "A provider with this id dose not exists."}), 409
+        logger.error(f"Error updating truvk with provider id: {provider_id}: {e}")
         return jsonify({"error": "An unexpected error occurred"}), 500

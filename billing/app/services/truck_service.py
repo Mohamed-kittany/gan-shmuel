@@ -21,13 +21,13 @@ class TruckService:
         connection = get_mysql_connection()
         cursor = connection.cursor()
         try:
-            # Check if provider id exists
+            # Check if provider id exists if it is go on
             cursor.execute("SELECT id FROM Provider WHERE id = %s", (provider_id,))
             if not cursor.fetchone():
                 self.logger.warning(f"The provider id: '{provider_id}' does not exist")
                 raise ValueError(f"There is no provider with the '{provider_id}' id")
 
-            # Check if the truck id already exists
+            # Check if the truck id already exists if it isnt go on
             cursor.execute("SELECT id FROM Trucks WHERE id = %s", (truck_id,))
             if cursor.fetchone():
                 self.logger.warning(f"Truck id : '{truck_id}' already exists.")
@@ -45,40 +45,39 @@ class TruckService:
             cursor.close()
 
 
-##############################################################to implamante
-    def update_provider(self, provider_id, name):
+    def update_truck(self, id, provider_id):
         """
-        Updates the name of an existing provider.
+        Updates the provider id of an existing truck.
         Args:
-            provider_id (int): The ID of the provider to update.
-            name (str): The new name for the provider.
+            id (str): the ID of an existing truck
+            provider_id (int): The ID of the provider.
         Raises:
-            ValueError: If the provider does not exist or if the name already exists.
+            ValueError: If the id does not exist or if the provider id dosnt exist in providers table.
             Exception: For database operation failures.
         """
-        self.logger.info(f"Attempting to update provider ID: {provider_id} with name: {name}")
+        self.logger.info(f"Attempting to update tuck ID: {id} with provider id: {provider_id}")
         connection = get_mysql_connection()
         cursor = connection.cursor()
         try:
-            # Check if provider exists
+            #check if provider id exists go on
             cursor.execute("SELECT id FROM Provider WHERE id = %s", (provider_id,))
             if not cursor.fetchone():
-                self.logger.warning(f"Provider ID: {provider_id} not found.")
-                raise ValueError("Provider not found.")
+                self.logger.warning(f"The provider id: '{provider_id}' does not exist")
+                raise ValueError(f"There is no provider with the '{provider_id}' id")
 
-            # Check if the new name already exists
-            cursor.execute("SELECT id FROM Provider WHERE name = %s AND id != %s", (name, provider_id))
-            if cursor.fetchone():
-                self.logger.warning(f"Provider name '{name}' already exists for another provider.")
-                raise ValueError("A provider with this name already exists.")
+            # Check if id exists if it is go on
+            cursor.execute("SELECT id FROM Trucks WHERE id = %s", (id,))
+            if not cursor.fetchone():
+                self.logger.warning(f"Trcuk with ID: '{id}' dose not exists.")
+                raise ValueError("A truck with this id dosnt exists.")
 
             # Update the provider name
             cursor.execute(
-                "UPDATE Provider SET name = %s WHERE id = %s",
-                (name, provider_id)
+                "UPDATE Trucks SET provider_id = %s WHERE id = %s",
+                (provider_id, id)
             )
             connection.commit()
-            self.logger.info(f"Provider ID: {provider_id} updated successfully to name: {name}")
+            self.logger.info(f"Truck ID number: {id} updated successfully to provider ID: {provider_id}")
         except Exception as e:
             connection.rollback()
             self.logger.error(f"Unexpected error while updating provider ID: {provider_id} - {e}")
