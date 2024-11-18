@@ -78,20 +78,20 @@ def execute_docker_compose(service_dir, commands, environment):
         )
     except Exception as e:
         logger.error(f"Docker Compose failed: {e}")
-        cleanup_containers(service_dir, environment)
+        cleanup_test_containers(service_dir, environment)
         raise
 
-def cleanup_containers(service_dir, environment):
+def cleanup_test_containers(service_dir):
     """Clean up Docker containers and networks only for the test environment."""
     try:
         run_subprocess(
-            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'down'],
+            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', '.env.test', 'down'],
             cwd=service_dir,
             check=False
         )
-        logger.info("Cleaned up containers and networks.")
+        logger.info("Cleaned up test containers and networks.")
     except Exception as e:
-        logger.error(f"Error during cleanup: {e}")
+        logger.error(f"Error during test cleanup: {e}")
 
 def check_container_health(service_dir, retries=5, delay=10):
     """Check health of Docker containers."""
@@ -115,7 +115,7 @@ def build_and_deploy(service_dir, environment, service_type):
         
         logger.info(f"Successfully deployed {service_dir}.")
     except Exception as e:
-        cleanup_containers(service_dir, environment)
+        cleanup_test_containers(service_dir, environment)
         raise RuntimeError(f"Deployment failed for {service_dir}: {e}")
 
 def run_tests(test_directory, rollback=False):
@@ -196,14 +196,36 @@ def load_environment(env_file):
     
     return environment
 
+def cleanup_old_prod_containers(service_dir):
+    """Clean up old production Docker containers while keeping the new ones running."""
+    try:
+        # Get list of running containers
+        result = run_subprocess(['docker', 'ps', '--format', '{{.Names}}'], check=True)
+        running_containers = result.strip().split('\n')
+        
+        # Get current production container names from environment
+        current_backend_name = os.getenv('BILLING_BACKEND_NAME', 'billing-backend')
+        current_db_name = os.getenv('BILLING_DB_NAME', 'billing-db')
+        
+        # Find and stop old production containers
+        for container in running_containers:
+            if ('billing-backend' in container or 'billing-db' in container) and \
+               container not in [current_backend_name, current_db_name]:
+                logger.info(f"Stopping old production container: {container}")
+                run_subprocess(['docker', 'stop', container], check=False)
+                run_subprocess(['docker', 'rm', container], check=False)
+        
+        logger.info("Cleaned up old production containers.")
+    except Exception as e:
+        logger.error(f"Error during production cleanup: {e}")
+
 def main(rollback=False, env_suffix=None):
     try:
         logger.info("Starting CI pipeline...")
         clone_or_update_repo()
 
-        # Ensure env_suffix is not None
         if env_suffix is None:
-            env_suffix = "1"  # Default to "1" if env_suffix is not provided
+            env_suffix = "1"
 
         os.environ["ENV_SUFFIX"] = env_suffix
 
@@ -212,11 +234,9 @@ def main(rollback=False, env_suffix=None):
         logger.info(f"Loaded test environment variables:")
         log_environment_variables()
 
-        # Define the folder paths
         billing_service_dir = REPO_DIR / 'billing'
         weight_service_dir = REPO_DIR / 'weight'
         
-        # Set up production directory
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
         target_prod_dir = Path(f'/app/prod/{timestamp}')
         target_prod_dir.mkdir(parents=True, exist_ok=True)
@@ -235,9 +255,9 @@ def main(rollback=False, env_suffix=None):
 
         logger.info("Running tests in the test environment...")
         
-        # Clean up test containers
-        cleanup_containers(billing_service_dir, environment)
-        cleanup_containers(weight_service_dir, environment)
+        # Clean up only test containers after testing
+        cleanup_test_containers(billing_service_dir)
+        cleanup_test_containers(weight_service_dir)
         
         # Load production environment
         environment = load_environment(".env.prod")
@@ -248,9 +268,12 @@ def main(rollback=False, env_suffix=None):
         blue_green_deploy(target_prod_dir / 'billing', environment, 'billing')
         blue_green_deploy(target_prod_dir / 'weight', environment, 'weight')
         
+        # Only clean up old production containers after new ones are running
+        cleanup_old_prod_containers(target_prod_dir / 'billing')
+        cleanup_old_prod_containers(target_prod_dir / 'weight')
+        
         logger.info(f"CI pipeline completed successfully in {environment} environment.")
         
-        # Handle rollback if necessary
         if rollback:
             logger.info("Tests passed. Pushing the rollback commit to GitHub...")
             GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
