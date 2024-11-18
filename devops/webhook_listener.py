@@ -25,16 +25,16 @@ def rollback():
         send_email(
                 subject="Rollback Pipeline Success",
                 body=f"Rollback pipeline executed successfully",
-                to_addresses=["ayalm1357@gmail.com", "ayalm1357@gmail.com"]
+                to_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"]
             )
         return jsonify({"status": "success", "message": "Rollback pipeline executed successfully"}), 200
     except Exception as e:
         logger.error(f"Rollback pipeline failed: {e}")
         # Send failure email
         send_email(
-            subject="Rollback Pipeline Failed",
+            subject="🚨 Rollback Pipeline Failed",
             body=f"Rollback pipeline failed.\n\nError: {str(e)}",
-            to_addresses=["ayalm1357@gmail.com", "ayalm1357@gmail.com"]
+            to_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"]
         )
         return jsonify({"status": "error", "message": str(e)}), 500    
 
@@ -103,7 +103,7 @@ def github_webhook():
             
             # Send failure email
             send_email(
-                subject="CI Pipeline Failed",
+                subject="🚨 CI Pipeline Failed",
                 body=f"CI pipeline failed on commit by {author}.\n\nError: {str(e)}",
                 to_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"]
             )
