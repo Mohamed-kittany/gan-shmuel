@@ -349,13 +349,11 @@
 #         raise
 # if __name__ == '__main__':
 #     main()
-
 import os
 import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
-import shutil
 from typing import List
 from logging_config import logger
 
@@ -460,48 +458,35 @@ class Deployment:
 
     def deploy_service(self, service: DockerService, env_file: str) -> bool:
         try:
-            # Deploy new version with temporary name
+            # Deploy new version with temporary name to test environment first
             new_project = f"{service.service_name}_new"
             service.build(new_project)
             service.start(new_project)
 
-            # Check if new deployment is healthy (skip health check for now)
-            # if not service.is_healthy(new_project):
-            #     raise DeploymentError("New containers are not healthy")
-
-            logger.info(f"New version of {service.service_name} deployed successfully.")
+            logger.info(f"New version of {service.service_name} deployed successfully to test environment.")
 
             # Run tests after deploying to test environment
             if not self.run_tests(service.service_dir):
                 raise DeploymentError(f"Tests failed for {service.service_name} in test environment")
 
-            # Stop old deployment if it exists
-            old_project = f"{service.service_name}_old"
-            service.stop(old_project)
+            # Stop the test environment (old project) after tests pass
+            logger.info(f"Tests passed for {service.service_name}, stopping test containers.")
+            service.stop(new_project)  # Stop the new test containers
 
-            # Rename current deployment to old (if exists)
-            current_project = service.service_name
-            service.stop(current_project)
-
-            # Rename new deployment to current
-            for container in service.get_container_names(new_project):
-                if container:
-                    new_name = container.replace('_new_', '_')
-                    run_command(['docker', 'rename', container, new_name])
-
-            logger.info(f"Successfully deployed {service.service_name}")
+            logger.info(f"Successfully deployed and tested {service.service_name} in the test environment.")
             return True
 
         except Exception as e:
             logger.error(f"Deployment failed for {service.service_name}: {e}")
-            # Cleanup failed deployment
+            # Cleanup failed deployment in test environment
             service.stop(new_project)
             return False
 
     def deploy_to_prod(self, service: DockerService) -> bool:
         """Deploy the service to production environment"""
-        # Deploy to prod with .env.prod
         logger.info(f"Deploying {service.service_name} to production")
+        
+        # Switch to .env.prod for production deployment
         service.env_file = '.env.prod'
         return self.deploy_service(service, '.env.prod')
 
@@ -522,8 +507,6 @@ class Deployment:
             # Test and deploy each service
             for service_name, env_file in services:
                 service_dir = self.repo_dir / service_name
-                
-                # Create service instance with .env.test for testing
                 service = DockerService(service_dir, service_name, env_file)
 
                 # Deploy the service to test environment first
@@ -547,7 +530,7 @@ def main(rollback=False):
     try:
         # Configuration
         REPO_URL = "https://github.com/AM8151/gan-shmuel.git"
-        BASE_DIR = Path(__file__).parent
+        BASE_DIR = '/app/dev/gan-shmuel'
 
         # Create and run deployment
         deployment = Deployment(REPO_URL, BASE_DIR)
