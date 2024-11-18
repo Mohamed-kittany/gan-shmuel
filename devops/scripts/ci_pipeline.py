@@ -494,7 +494,7 @@ import socket
 import subprocess
 import os
 from pathlib import Path
-from shutil import copyfile, copytree
+from shutil import copyfile, copytree, ignore_patterns
 from dotenv import load_dotenv
 from logging_config import logger
 from datetime import datetime
@@ -699,7 +699,11 @@ def main(rollback=False, env_suffix=None):
         ]:
         # Copy the entire directory structure (not just a single file)
             copytree(service_dir, target_dir, dirs_exist_ok=True)
-        
+
+        def log_copy(src, dst):
+            logger.info(f"Copying from {src} to {dst}")
+            copytree(src, dst, ignore=ignore_patterns(), dirs_exist_ok=True, copy_function=log_copy)
+            
         # Deploy test environment
         build_and_deploy(billing_service_dir, environment, 'billing')
         build_and_deploy(weight_service_dir, environment, 'weight')
@@ -712,10 +716,13 @@ def main(rollback=False, env_suffix=None):
         #if run_tests(weight_service_dir / 'tests') and run_tests(billing_service_dir / 'tests'):
         
         load_dotenv(dotenv_path="env.prod")
-        print("Environment:", os.getenv('ENV', 'Not Set'))
+        def log_environment_variables():
+            logger.info("Current environment variables:")
+            for key, value in os.environ.items():
+                logger.info(f"{key}: {value}")
         os.environ['ENV'] = 'prod'
         environment = os.getenv('ENV', 'prod')
-        logger.info(f"Deploying to {environment} environment...")
+        logger.info(f"Deploying to {os.getenv('ENV', 'prod')} environment...")
         blue_green_deploy(target_prod_dir / 'billing', environment, 'billing')  
         blue_green_deploy(target_prod_dir / 'weight', environment, 'weight')
         
