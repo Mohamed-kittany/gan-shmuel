@@ -530,7 +530,7 @@ def main(rollback=False):
     try:
         # Configuration
         REPO_URL = "https://github.com/AM8151/gan-shmuel.git"
-        BASE_DIR = '/app/dev/gan-shmuel'
+        BASE_DIR = Path(__file__).parent / 'dev'
 
         # Create and run deployment
         deployment = Deployment(REPO_URL, BASE_DIR)

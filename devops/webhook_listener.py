@@ -132,7 +132,8 @@ def github_webhook():
         logger.info(f"Commit message: {commit_msg}")
 
         # Determine the environment based on the branch name
-        env = 'prod' if branch_name == 'master' else 'test'
+        if branch_name == 'master':
+            env = 'test'
 
         logger.info(f"Running CI pipeline for environment: {env}")
 
