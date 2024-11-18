@@ -276,7 +276,12 @@ def main(rollback=False):
         logger.info(f"CI pipeline completed successfully in {environment} and prod environments.")
         if rollback: 
             logger.info("Tests passed. Pushing the rollback commit to GitHub...")
-            subprocess.run(['git', 'push', '--force', 'origin', 'master'], cwd=REPO_DIR, check=True)
+            GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
+            subprocess.run(
+                ['git', 'push', '--force', f'https://{GITHUB_TOKEN}@github.com/AM8151/gan-shmuel.git', 'master'],
+                cwd=REPO_DIR,
+                check=True
+            )
             logger.info("Successfully pushed the rollback commit to GitHub.")
 
     except CloneRepositoryError as e:
