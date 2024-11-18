@@ -44,7 +44,7 @@ services:
       - ${NETWORK_NAME:-test-network}  
 
 networks:
-  - ${NETWORK_NAME:-test-network}
+  -  {} 
 
 
 volumes:
