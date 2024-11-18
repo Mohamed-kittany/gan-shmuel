@@ -5,7 +5,7 @@ from pathlib import Path
 from shutil import copyfile
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path=".env.test")
+load_dotenv(dotenv_path="env.test")
 
 # Get the path of the current directory
 CURRENT_DIR = Path(__file__).parent
