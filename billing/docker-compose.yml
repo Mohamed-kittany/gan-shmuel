@@ -33,6 +33,8 @@ services:
     volumes:
       - ./database/billingdb.sql:/docker-entrypoint-initdb.d/billingdb.sql  
       - billing-db-data:/var/lib/mysql 
+      - /app/.env.test:/app/.env.test
+      - /app/.env.prod:/app/.env.prod
     environment:
       MYSQL_ROOT_PASSWORD: ${BILLING_MYSQL_DATABASE_PASSWORD}
       MYSQL_DATABASE: ${BILLING_MYSQL_DATABASE_DB}

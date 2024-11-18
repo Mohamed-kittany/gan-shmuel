@@ -24,6 +24,8 @@ services:
     volumes:
       - ./db/weightdb.sql:/docker-entrypoint-initdb.d/weightdb.sql  
       - weight-db-data:/var/lib/mysql 
+      - /app/.env.test:/app/.env.test
+      - /app/.env.prod:/app/.env.prod
     environment:
       MYSQL_ROOT_PASSWORD: ${WEIGHT_MYSQL_DATABASE_PASSWORD}
       MYSQL_DATABASE: ${WEIGHT_MYSQL_DATABASE_DB}

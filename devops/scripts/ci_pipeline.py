@@ -556,24 +556,24 @@ def clone_or_update_repo():
         run_subprocess(['git', 'fetch'], cwd=REPO_DIR)
         run_subprocess(['git', 'reset', '--hard', 'origin/master'], cwd=REPO_DIR)
 
-def manage_env_file(service_dir, environment):
-    """Copy the correct .env file."""
-    env_file_map = {
-        'prod': '/app/.env.prod',
-        'test': '/app/.env.test',
-    }
-    source_env = env_file_map.get(environment)
-    if not source_env:
-        raise ValueError(f"Unknown environment: {environment}")
-    target_env = service_dir / f'.env.{environment}'
-    copyfile(source_env, target_env)
-    logger.info(f"Copied {source_env} to {target_env}")
+# def manage_env_file(service_dir, environment):
+#     """Copy the correct .env file."""
+#     env_file_map = {
+#         'prod': '/app/.env.prod',
+#         'test': '/app/.env.test',
+#     }
+#     source_env = env_file_map.get(environment)
+#     if not source_env:
+#         raise ValueError(f"Unknown environment: {environment}")
+#     target_env = service_dir / f'.env.{environment}'
+#     copyfile(source_env, target_env)
+#     logger.info(f"Copied {source_env} to {target_env}")
 
 def execute_docker_compose(service_dir, commands, environment):
     """Run Docker Compose commands."""
     try:
-        manage_env_file(service_dir, environment)
-        env_file = f".env.prod"
+        # manage_env_file(service_dir, environment)
+        env_file = f"/app/.env.prod"
         logger.info(str(service_dir / 'docker-compose.yml'))
         run_subprocess(
             ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', env_file] + commands,
@@ -586,16 +586,15 @@ def execute_docker_compose(service_dir, commands, environment):
 
 def cleanup_containers(service_dir, environment):
     """Clean up Docker containers and networks only for the test environment."""
-    if environment != "prod":
-        try:
-            run_subprocess(
-                ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'down', '--volumes', '--remove-orphans'],
-                cwd=service_dir,
-                check=False
-            )
-            logger.info("Cleaned up containers and networks.")
-        except Exception as e:
-            logger.error(f"Error during cleanup: {e}")
+    try:
+        run_subprocess(
+            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'down', '--volumes', '--remove-orphans'],
+            cwd=service_dir,
+            check=False
+        )
+        logger.info("Cleaned up containers and networks.")
+    except Exception as e:
+        logger.error(f"Error during cleanup: {e}")
 
 def check_container_health(service_dir, retries=5, delay=10):
     """Check health of Docker containers."""
@@ -722,6 +721,7 @@ def main(rollback=False, env_suffix=None):
             logger.info("Current environment variables:")
             for key, value in os.environ.items():
                 logger.info(f"{key}: {value}")
+        log_environment_variables()
         os.environ['ENV'] = 'prod'
         environment = os.getenv('ENV', 'prod')
         logger.info(f"Deploying to {os.getenv('ENV', 'prod')} environment...")
