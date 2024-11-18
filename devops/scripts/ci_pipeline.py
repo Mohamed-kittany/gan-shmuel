@@ -262,12 +262,12 @@ def main(rollback=False):
         if not check_tests_passed(str(REPO_DIR / 'weight' / 'tests'), rollback):
             raise RuntimeError("Tests failed in the weight service. Aborting pipeline.")
         
-        # Step 5: Clean up test environment before deploying to production
+        # Step 4: Clean up test environment before deploying to production
         logger.info("Cleaning up test environment...")
         cleanup_containers(REPO_DIR / 'billing')
         cleanup_containers(REPO_DIR / 'weight')
         
-        # Step 6: Deploy to production environment (if tests passed)
+        # Step 5: Deploy to production environment (if tests passed)
         logger.info("Deploying to production environment...")
         os.environ['ENV'] = 'prod'  # Switch environment to production
         build_and_deploy(REPO_DIR / 'billing', 'prod')
