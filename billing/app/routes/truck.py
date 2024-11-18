@@ -1,5 +1,5 @@
 import logging
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request # type: ignore
 from ..services import TruckService
 
 WEIGHT_SERVICE_URL = "http://weight-app:6000"
