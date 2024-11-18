@@ -1,6 +1,6 @@
 
 # /billing/app/tests/__init__.py
-import pytest
+import pytest # type: ignore
 from app import create_app
 import argparse
 

@@ -1,5 +1,5 @@
-from flask import Blueprint, request, jsonify
-from billing.app.services.rate_service import RateService
+from flask import Blueprint, request, jsonify # type: ignore
+from ..services import RateService
 
 rate_bp = Blueprint('rate', __name__, url_prefix='/rates')
 

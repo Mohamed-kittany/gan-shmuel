@@ -1,5 +1,5 @@
 import os
-import pandas as pd
+import pandas as pd  # type: ignore
 from app.extensions import get_mysql_connection
 
 class RateService:

@@ -1,5 +1,5 @@
 import logging
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request # type: ignore
 from ..services import ProviderService
 
 provider_bp = Blueprint('provider', __name__)
