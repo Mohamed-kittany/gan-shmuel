@@ -3,7 +3,9 @@ import os
 from logging_config import logger
 from pathlib import Path
 from shutil import copyfile
+from dotenv import load_dotenv
 
+load_dotenv(dotenv_path=".env.test")
 
 
 # Get the path of the current directory
