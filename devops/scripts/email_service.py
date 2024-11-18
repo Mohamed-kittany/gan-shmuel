@@ -7,7 +7,7 @@ from email import encoders
 import os
 from logging_config import logger
 
-load_dotenv(dotenv_path=".env.test")
+load_dotenv(dotenv_path=".env.prod")
 
 
 def send_email(subject, body, to_addresses, cc_addresses=None):
