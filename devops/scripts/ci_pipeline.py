@@ -561,7 +561,7 @@ def execute_docker_compose(service_dir, commands, environment):
     """Run Docker Compose commands."""
     try:
         # manage_env_file(service_dir, environment)
-        env_file = f"/app/.env.{environment}"
+        env_file = f".env.{environment}"
         logger.info(str(service_dir / 'docker-compose.yml'))
         run_subprocess(
             ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', env_file] + commands,
@@ -673,7 +673,7 @@ def main(rollback=False, env_suffix=None):
         os.environ["ENV_SUFFIX"] = env_suffix if env_suffix else "1"
         # environment = os.getenv('ENV', 'prod')
         environment='test'
-        load_dotenv(dotenv_path="/app/.env.test")
+        load_dotenv(dotenv_path=".env.test")
         log_environment_variables()
         # Define the folder paths based on environment suffix
         billing_service_dir = REPO_DIR / 'billing'
@@ -708,7 +708,7 @@ def main(rollback=False, env_suffix=None):
         cleanup_containers(billing_service_dir, environment)  # Clean old containers for billing
         cleanup_containers(weight_service_dir, environment) 
         
-        load_dotenv(dotenv_path="/app/.env.prod")
+        load_dotenv(dotenv_path=".env.prod")
        
         log_environment_variables()
         # os.environ['ENV'] = 'prod'
