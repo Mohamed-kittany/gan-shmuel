@@ -357,7 +357,6 @@ from pathlib import Path
 from typing import List
 from logging_config import logger
 
-
 class DeploymentError(Exception):
     """Custom exception for deployment errors"""
     pass
@@ -365,7 +364,7 @@ class DeploymentError(Exception):
 
 def run_command(command: List[str], cwd: Path = None, check: bool = True) -> str:
     """
-    Execute a shell command and return its output
+    Execute a shell command and return its output.
     """
     try:
         result = subprocess.run(
@@ -389,16 +388,19 @@ class DockerService:
         self.service_dir = service_dir
         self.service_name = service_name
         self.env_file = env_file
+        # Update env_file to be the absolute path, assuming it's in the /app directory
+        self.env_file_path = Path("/app") / self.env_file
+
+        # docker-compose command
         self.compose_cmd = [
             'docker-compose',
             '-f', str(service_dir / 'docker-compose.yml'),
-            '--env-file', env_file
+            '--env-file', str(self.env_file_path)
         ]
 
     def build(self, project_name: str) -> None:
         """Build the Docker images"""
         logger.info(f"Building {self.service_name} with project name {project_name}")
-        print(f"docker-compose.yml file location: {str(self.service_dir / 'docker-compose.yml')}")
         run_command([*self.compose_cmd, '-p', project_name, 'build', '--no-cache'], self.service_dir)
 
     def start(self, project_name: str) -> None:
@@ -457,15 +459,15 @@ class Deployment:
             return False
 
     def deploy_service(self, service: DockerService, env_file: str) -> bool:
+        """Deploy the service in test environment first and then prod if successful"""
         try:
             # Deploy new version with temporary name to test environment first
             new_project = f"{service.service_name}_new"
             service.build(new_project)
             service.start(new_project)
 
-            logger.info(f"New version of {service.service_name} deployed successfully to test environment.")
-
             # Run tests after deploying to test environment
+            logger.info(f"New version of {service.service_name} deployed successfully to test environment.")
             if not self.run_tests(service.service_dir):
                 raise DeploymentError(f"Tests failed for {service.service_name} in test environment")
 
@@ -484,9 +486,8 @@ class Deployment:
 
     def deploy_to_prod(self, service: DockerService) -> bool:
         """Deploy the service to production environment"""
+        # Deploy to prod with .env.prod
         logger.info(f"Deploying {service.service_name} to production")
-        
-        # Switch to .env.prod for production deployment
         service.env_file = '.env.prod'
         return self.deploy_service(service, '.env.prod')
 
