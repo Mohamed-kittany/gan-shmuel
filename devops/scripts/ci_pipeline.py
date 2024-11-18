@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=".env.test")
 
-
 # Get the path of the current directory
 CURRENT_DIR = Path(__file__).parent
 REPO_DIR = CURRENT_DIR / "gan-shmuel"  # Path to the cloned repository
