@@ -708,8 +708,8 @@ def main(rollback=False, env_suffix=None):
             copytree(service_dir, target_dir, ignore=ignore_patterns(), dirs_exist_ok=True, copy_function=log_copy)
 
         # Deploy test environment
-        build_and_deploy(billing_service_dir, environment, 'billing')
-        build_and_deploy(weight_service_dir, environment, 'weight')
+        # build_and_deploy(billing_service_dir, environment, 'billing')
+        # build_and_deploy(weight_service_dir, environment, 'weight')
 
         logger.info("Running tests in the test environment...")
         
