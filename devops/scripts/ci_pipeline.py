@@ -398,6 +398,7 @@ class DockerService:
     def build(self, project_name: str) -> None:
         """Build the Docker images"""
         logger.info(f"Building {self.service_name} with project name {project_name}")
+        print(f"docker-compose.yml file location: {str(self.service_dir / 'docker-compose.yml')}")
         run_command([*self.compose_cmd, '-p', project_name, 'build', '--no-cache'], self.service_dir)
 
     def start(self, project_name: str) -> None:
@@ -455,7 +456,6 @@ class Deployment:
             return False
 
     def deploy_service(self, service: DockerService, env_file: str) -> bool:
-        """Deploy a single service with zero-downtime"""
         try:
             # Deploy new version with temporary name
             new_project = f"{service.service_name}_new"
