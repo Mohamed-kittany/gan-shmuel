@@ -556,18 +556,6 @@ def clone_or_update_repo():
         run_subprocess(['git', 'fetch'], cwd=REPO_DIR)
         run_subprocess(['git', 'reset', '--hard', 'origin/master'], cwd=REPO_DIR)
 
-# def manage_env_file(service_dir, environment):
-#     """Copy the correct .env file."""
-#     env_file_map = {
-#         'prod': '/app/.env.prod',
-#         'test': '/app/.env.test',
-#     }
-#     source_env = env_file_map.get(environment)
-#     if not source_env:
-#         raise ValueError(f"Unknown environment: {environment}")
-#     target_env = service_dir / f'.env.{environment}'
-#     copyfile(source_env, target_env)
-#     logger.info(f"Copied {source_env} to {target_env}")
 
 def execute_docker_compose(service_dir, commands, environment):
     """Run Docker Compose commands."""
@@ -685,7 +673,7 @@ def main(rollback=False, env_suffix=None):
         os.environ["ENV_SUFFIX"] = env_suffix if env_suffix else "1"
         # environment = os.getenv('ENV', 'prod')
         environment='test'
-        load_dotenv(dotenv_path="env.test")
+        load_dotenv(dotenv_path="/app/.env.test")
         log_environment_variables()
         # Define the folder paths based on environment suffix
         billing_service_dir = REPO_DIR / 'billing'
@@ -720,7 +708,7 @@ def main(rollback=False, env_suffix=None):
         cleanup_containers(billing_service_dir, environment)  # Clean old containers for billing
         cleanup_containers(weight_service_dir, environment) 
         
-        load_dotenv(dotenv_path="env.prod")
+        load_dotenv(dotenv_path="/app/.env.prod")
        
         log_environment_variables()
         # os.environ['ENV'] = 'prod'
