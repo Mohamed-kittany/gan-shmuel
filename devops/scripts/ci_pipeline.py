@@ -273,6 +273,7 @@ def main(rollback=False):
         build_and_deploy(REPO_DIR / 'billing', 'prod')
         build_and_deploy(REPO_DIR / 'weight', 'prod', other_service_dir=REPO_DIR / 'billing')
 
+
         logger.info(f"CI pipeline completed successfully in {environment} and prod environments.")
         if rollback: 
             logger.info("Tests passed. Pushing the rollback commit to GitHub...")
