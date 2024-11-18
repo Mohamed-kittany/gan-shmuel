@@ -9,6 +9,8 @@ from shutil import copyfile
 # Get the path of the current directory
 CURRENT_DIR = Path(__file__).parent
 REPO_DIR = CURRENT_DIR / "gan-shmuel"  # Path to the cloned repository
+class CloneRepositoryError(Exception):
+    pass
 def clone_repository():
     """Clones the Git repository if it doesn't exist locally or initializes it if mounted."""
     if not REPO_DIR.exists():
@@ -18,7 +20,7 @@ def clone_repository():
             logger.info(f"Successfully cloned the repository into {REPO_DIR}")
         except subprocess.CalledProcessError as e:
             logger.error(f"Failed to clone the repository: {e}")
-            raise
+            raise CloneRepositoryError("Failed to clone the repository")
     else:
         logger.info("Repository directory exists. Checking Git status...")
         try:
@@ -35,7 +37,7 @@ def clone_repository():
                 logger.info("Git repository initialized successfully")
             except subprocess.CalledProcessError as e:
                 logger.error(f"Failed to initialize git repository: {e}")
-                raise
+                raise CloneRepositoryError("Failed to initialize git repository")
 def pull_latest_code():
     """Pull the latest code from the GitHub repository (from the master branch)."""
     logger.info("Pulling latest code from GitHub...")
@@ -180,7 +182,7 @@ def build_and_deploy(service_dir, environment,other_service_dir=None):
     except Exception as e:
         logger.error(f"Error running tests: {e}")
         return False
-def check_tests_passed(test_directory):
+def check_tests_passed(test_directory, rollback=False):
     """Runs the test suite and checks if tests passed for a specific test directory."""
     try:
         logger.info(f"Running tests from {test_directory}...")
@@ -192,10 +194,14 @@ def check_tests_passed(test_directory):
             logger.info("Tests passed successfully!")
             return True
         else:
+            if not rollback:
+                rollback_func()
             logger.error(f"Tests failed with exit code {result.returncode}")
             logger.error(f"Test output: {result.stdout}\n{result.stderr}")
             return False
     except Exception as e:
+        if not rollback:
+            rollback_func()
         logger.error(f"Error running tests: {e}")
         return False
 
@@ -228,53 +234,6 @@ def check_container_health(service_dir, retries=5, delay=10):
         logger.error(f"Error checking container health: {e}")
         raise
 
-# def main(rollback=False):
-#     """Main function to process both billing and weight services."""
-#     environment = os.getenv('ENV', 'test')  
-    
-#     try:
-#         # Step 1: Clone and pull latest changes from the repository
-#         clone_repository()
-#         # Rollback to the previous commit if rollback flag is set
-#         if not rollback:
-#             pull_latest_code()
-#         else:
-#             rollback_func()
-
-#         # Step 2: Build and deploy both services in the test environment
-#         build_and_deploy(REPO_DIR / 'billing', environment)
-#         build_and_deploy(REPO_DIR / 'weight', environment, other_service_dir=REPO_DIR / 'billing')
-
-#         # Step 3: Check if tests passed (if applicable)
-#         logger.info("Running tests in the test environment...")
-#         logger.info("Running tests for billing service...")
-#         if not check_tests_passed(str(REPO_DIR / 'billing' / 'tests')):
-#             raise RuntimeError("Tests failed in the billing service. Aborting pipeline.")
-        
-#         logger.info("Running tests for weight service...")
-#         if not check_tests_passed(str(REPO_DIR / 'weight' / 'tests')):
-#             raise RuntimeError("Tests failed in the weight service. Aborting pipeline.")
-        
-#         # Step 4: Clean up test environment before deploying to production
-#         # logger.info("Cleaning up test environment...")
-#         # cleanup_containers(REPO_DIR / 'billing')
-#         # cleanup_containers(REPO_DIR / 'weight')
-        
-#         # Step 5: Deploy to production environment (if tests passed)
-#         logger.info("Deploying to production environment...")
-#         os.environ['ENV'] = 'prod'  # Switch environment to production
-#         build_and_deploy(REPO_DIR / 'billing', 'prod')
-#         build_and_deploy(REPO_DIR / 'weight', 'prod', other_service_dir=REPO_DIR / 'billing')
-
-#         logger.info(f"CI pipeline completed successfully in {environment} and prod environments.")
-    
-#     except Exception as e:
-#         logger.error(f"CI pipeline failed for one or both services: {e}")
-#         # Ensure cleanup in case of failure
-#         cleanup_containers(REPO_DIR / 'billing')
-#         cleanup_containers(REPO_DIR / 'weight')
-#         raise
-
 def main(rollback=False):
     """Main function to process both billing and weight services."""
     environment = os.getenv('ENV', 'test')  
@@ -296,22 +255,17 @@ def main(rollback=False):
         # Step 3: Check if tests passed (if applicable)
         logger.info("Running tests in the test environment...")
         logger.info("Running tests for billing service...")
-        if not check_tests_passed(str(REPO_DIR / 'billing' / 'tests')):
+        if not check_tests_passed(str(REPO_DIR / 'billing' / 'tests'), rollback):
             raise RuntimeError("Tests failed in the billing service. Aborting pipeline.")
         
         logger.info("Running tests for weight service...")
-        if not check_tests_passed(str(REPO_DIR / 'weight' / 'tests')):
+        if not check_tests_passed(str(REPO_DIR / 'weight' / 'tests'), rollback):
             raise RuntimeError("Tests failed in the weight service. Aborting pipeline.")
         
-        # Step 4: If tests passed, push the rollback commit to GitHub
-        logger.info("Tests passed. Pushing the rollback commit to GitHub...")
-        subprocess.run(['git', 'push', '--force', 'origin', 'master'], cwd=REPO_DIR, check=True)
-        logger.info("Successfully pushed the rollback commit to GitHub.")
-        
         # Step 5: Clean up test environment before deploying to production
-        # logger.info("Cleaning up test environment...")
-        # cleanup_containers(REPO_DIR / 'billing')
-        # cleanup_containers(REPO_DIR / 'weight')
+        logger.info("Cleaning up test environment...")
+        cleanup_containers(REPO_DIR / 'billing')
+        cleanup_containers(REPO_DIR / 'weight')
         
         # Step 6: Deploy to production environment (if tests passed)
         logger.info("Deploying to production environment...")
@@ -320,12 +274,21 @@ def main(rollback=False):
         build_and_deploy(REPO_DIR / 'weight', 'prod', other_service_dir=REPO_DIR / 'billing')
 
         logger.info(f"CI pipeline completed successfully in {environment} and prod environments.")
-    
+        if rollback: 
+            logger.info("Tests passed. Pushing the rollback commit to GitHub...")
+            subprocess.run(['git', 'push', '--force', 'origin', 'master'], cwd=REPO_DIR, check=True)
+            logger.info("Successfully pushed the rollback commit to GitHub.")
+
+    except CloneRepositoryError as e:
+        logger.error(f"Failed to clone repository: {e}")
+
     except Exception as e:
         logger.error(f"CI pipeline failed for one or both services: {e}")
         # Ensure cleanup in case of failure
         cleanup_containers(REPO_DIR / 'billing')
         cleanup_containers(REPO_DIR / 'weight')
+        if not rollback:
+            main(rollback=True)
         raise
 
 if __name__ == "__main__":

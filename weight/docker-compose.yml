@@ -21,6 +21,7 @@ services:
       - "${WEIGHT_DB_PORT:-3306}:3306"  # Expose port only in prod (3306 or default)
     volumes:
       - ./db/weightdb.sql:/docker-entrypoint-initdb.d/weightdb.sql  # Only needed in test, not prod
+      - weight-db-data:/var/lib/mysql # Persist data across container restarts
     environment:
       MYSQL_ROOT_PASSWORD: ${WEIGHT_MYSQL_DATABASE_PASSWORD}
       MYSQL_DATABASE: ${WEIGHT_MYSQL_DATABASE_DB}
