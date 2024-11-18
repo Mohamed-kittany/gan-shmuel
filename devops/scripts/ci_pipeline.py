@@ -588,7 +588,7 @@ def cleanup_containers(service_dir, environment):
     """Clean up Docker containers and networks only for the test environment."""
     try:
         run_subprocess(
-            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'down', '--volumes', '--remove-orphans'],
+            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'down'],
             cwd=service_dir,
             check=False
         )
