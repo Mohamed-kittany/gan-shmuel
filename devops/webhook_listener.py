@@ -103,7 +103,7 @@ def github_webhook():
             send_email(
                 subject="CI Pipeline Failed",
                 body=f"CI pipeline failed on commit by {author}.\n\nError: {str(e)}",
-                to_addresses=["ayalm1357@gmail.com", "ayalm1357@gmail.com"]
+                to_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"]
             )
             return jsonify({"status": "error", "message": str(e)}), 500
     except Exception as e:
