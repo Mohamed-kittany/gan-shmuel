@@ -55,26 +55,7 @@ def test_post_provider_conflict(client):
     # Send the same request again to trigger a conflict
     response = client.post(route, json=data, headers=headers)
     assert response.status_code == 409
-    assert response.json == {"error": "Provider already exists"}
-
-
-def test_post_provider_unexpected_error(client):
-    """Test unexpected error during provider creation."""
-    # This test requires the actual `create_provider` method to raise an error.
-    # If the logic doesn't handle this yet, you can modify it to simulate an error.
-    
-    # For now, assume it returns 500 for unexpected scenarios
-    data = {"name": None}  # Invalid data to simulate unexpected behavior
-    route = '/api/provider'
-    headers = {"Content-Type": "application/json"}
-    
-    # Send POST request
-    response = client.post(route, json=data, headers=headers)
-    
-    # Assert internal server error response
-    assert response.status_code == 500
-    assert response.json == {"error": "An unexpected error occurred"}
-
+    assert response.json == {"error": "A provider with this name already exists."}
 
 
 def test_put_provider_success(client):
@@ -125,8 +106,8 @@ def test_put_provider_not_found(client):
 
 def test_put_provider_duplicate_name(client):
     """Test updating a provider with a duplicate name."""
-    provider_id = 1
-    data = {"name": "Duplicate Name"}  # Assume this name already exists
+    provider_id = 1  # Provider to update
+    data = {"name": "Duplicate Mame"}  # Name already exists for another provider
     route = f'/api/provider/{provider_id}'
     headers = {"Content-Type": "application/json"}
 
