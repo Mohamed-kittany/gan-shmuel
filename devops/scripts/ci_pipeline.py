@@ -573,7 +573,8 @@ def execute_docker_compose(service_dir, commands, environment):
     """Run Docker Compose commands."""
     try:
         manage_env_file(service_dir, environment)
-        env_file = f".env.{environment}"
+        env_file = f".env.prod"
+        logger.info(str(service_dir / 'docker-compose.yml'))
         run_subprocess(
             ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', env_file] + commands,
             cwd=service_dir,
@@ -680,7 +681,7 @@ def main(rollback=False, env_suffix=None):
 
         # Now the environment suffix is always set
         os.environ["ENV_SUFFIX"] = env_suffix if env_suffix else "1"
-        environment = os.getenv('ENV', 'test')
+        environment = os.getenv('ENV', 'prod')
         
         
         # Define the folder paths based on environment suffix
