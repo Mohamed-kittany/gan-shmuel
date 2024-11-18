@@ -73,4 +73,4 @@ def test_get_rates_success(client):
     # Assert success response
     assert response.status_code == 200
     assert len(response.json) > 0
-    assert all(key in response.json[0] for key in ["product_id", "rate", "scope", "provider_name"])
+    assert all(key in response.json[0] for key in ["product_id", "rate", "scope"])

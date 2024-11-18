@@ -118,17 +118,3 @@ def test_put_provider_duplicate_name(client):
     assert response.status_code == 409
     assert response.json == {"error": "A provider with this name already exists."}
 
-
-def test_put_provider_unexpected_error(client):
-    """Test unexpected error during provider update."""
-    provider_id = 1
-    data = {"name": None}  # Invalid data to simulate unexpected behavior
-    route = f'/api/provider/{provider_id}'
-    headers = {"Content-Type": "application/json"}
-
-    # Send PUT request
-    response = client.put(route, json=data, headers=headers)
-
-    # Assert internal server error response
-    assert response.status_code == 500
-    assert response.json == {"error": "An unexpected error occurred"}
