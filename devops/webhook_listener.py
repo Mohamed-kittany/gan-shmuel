@@ -86,12 +86,12 @@ def github_webhook():
             
             # Log success and send success email
             logger.info(f"CI pipeline executed successfully for commit by {author} to branch {branch_name}")
-            send_email(
-                subject="CI Pipeline Success",
-                body=f"CI pipeline executed successfully on commit by {author}.\n\nCommit email: {commit_owner_email}",
-                cc_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"],
-                to_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"],
-            )
+            # send_email(
+            #     subject="CI Pipeline Success",
+            #     body=f"CI pipeline executed successfully on commit by {author}.\n\nCommit email: {commit_owner_email}",
+            #     cc_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"],
+            #     to_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"],
+            # )
             
             return jsonify({
                 "status": "success",
