@@ -24,34 +24,6 @@ def run_subprocess(command, cwd=None, timeout=300, capture_output=True, check=Tr
         logger.error(f"Command '{' '.join(command)}' timed out.")
         raise
 
-# def clone_repository():
-#     """Clones the Git repository if it doesn't exist locally or initializes it if mounted."""
-#     if not REPO_DIR.exists():
-#         logger.info("Repository not found. Cloning repository into 'gan-shmuel' folder...")
-#         try:
-#             subprocess.run(['git', 'clone', 'https://github.com/AM8151/gan-shmuel.git', str(REPO_DIR)], check=True)
-#             logger.info(f"Successfully cloned the repository into {REPO_DIR}")
-#         except subprocess.CalledProcessError as e:
-#             logger.error(f"Failed to clone the repository: {e}")
-#             raise CloneRepositoryError("Failed to clone the repository")
-#     else:
-#         logger.info("Repository directory exists. Checking Git status...")
-#         try:
-#             # Check if it's a git repository
-#             subprocess.run(['git', 'status'], cwd=REPO_DIR, check=True, capture_output=True)
-#             logger.info("Git repository found. Proceeding with pulling latest changes.")
-#         except subprocess.CalledProcessError:
-#             logger.info("Directory exists but not a Git repository. Initializing...")
-#             try:
-#                 # Initialize git and set up remote
-#                 subprocess.run(['git', 'init'], cwd=REPO_DIR, check=True)
-#                 subprocess.run(['git', 'remote', 'add', 'origin', 'https://github.com/AM8151/gan-shmuel.git'], cwd=REPO_DIR, check=True)
-#                 subprocess.run(['git', 'fetch'], cwd=REPO_DIR, check=True)
-#                 logger.info("Git repository initialized successfully")
-#             except subprocess.CalledProcessError as e:
-#                 logger.error(f"Failed to initialize git repository: {e}")
-#                 raise CloneRepositoryError("Failed to initialize git repository")
-# def pull_latest_code():
 #     """Pull the latest code from the GitHub repository (from the master branch)."""
 #     logger.info("Pulling latest code from GitHub...")
 
@@ -125,7 +97,7 @@ def copy_env_file(service_dir, environment):
 
 def execute_docker_compose(commands, service_dir, environment):
     try:
-        copy_env_file(service_dir, environment)
+   
         env_file = f'.env.{environment}'
         logger.info(f"Running: docker-compose -f {str(service_dir / 'docker-compose.yml')} --env-file {env_file} {' '.join(commands)}")
         
@@ -162,16 +134,14 @@ def cleanup_containers(service_dir):
 def build_and_deploy(service_dir, environment,other_service_dir=None):
     """Build Docker images and deploy containers for a given service directory."""
     try:
-        # Step 1: Copy the correct .env file based on the environment
-  
-        
+        copy_env_file(service_dir, environment)
         # Step 2: Build Docker images from the updated Dockerfile
         logger.info(f"Building Docker containers for {service_dir}...")
         execute_docker_compose(['build', '--no-cache'], service_dir,environment)
 
         # Step 3: Start containers and run them
         logger.info(f"Starting Docker containers for {service_dir}...")
-        execute_docker_compose(['up', '--build', '-d'], service_dir,environment)  # Added -d for detached mode
+        execute_docker_compose(['up', '-d'], service_dir,environment)  # Added -d for detached mode
         
         # Step 4: Check container health
         check_container_health(service_dir)
@@ -289,16 +259,12 @@ def main(rollback=False):
    
     
     try:
-        # # Step 1: Clone and pull latest changes from the repository
-        # clone_repository()
-
-        # # Rollback to the previous commit if rollback flag is set
-        # pull_latest_code()
         clone_or_update_repo()
         if rollback:
             rollback_func()
         load_environment('/app/.env.test')
         environment = 'test' 
+
         # Step 2: Build and deploy both services in the test environment
         build_and_deploy(REPO_DIR / 'billing', environment)
         build_and_deploy(REPO_DIR / 'weight', environment, other_service_dir=REPO_DIR / 'billing')
