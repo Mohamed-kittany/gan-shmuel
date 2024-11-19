@@ -1,9 +1,9 @@
-from flask import Blueprint, request, jsonify
-from billing.app.services.rate_service import RateService
+from flask import Blueprint, request, jsonify # type: ignore
+from ..services import RateService
 
-rate_bp = Blueprint('rate', __name__, url_prefix='/rates')
+rate_bp = Blueprint('rate', __name__)
 
-@rate_bp.route('/', methods=['POST'])
+@rate_bp.route('/rates', methods=['POST'])
 def upload_rates():
     """Upload and process a rates file."""
     file = request.files.get('file')
@@ -17,7 +17,7 @@ def upload_rates():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@rate_bp.route('/', methods=['GET'])
+@rate_bp.route('/rates', methods=['GET'])
 def get_all_rates():
     """Retrieve all rates from the database."""
     try:
