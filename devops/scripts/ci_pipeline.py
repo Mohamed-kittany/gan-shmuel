@@ -347,8 +347,8 @@ class CIPipeline:
     def _execute_docker_compose(self, command: List[str], service_dir: Path, environment: str, service_type: str) -> None:
         """Execute docker-compose command for build or up."""
         try:
-            docker_compose_file = service_dir / f"docker-compose.{environment}.yml"
-            cmd = ['docker-compose', '--quiet', '-f', str(docker_compose_file)] + command
+            docker_compose_file = service_dir / f"docker-compose.yml"
+            cmd = ['docker-compose', '-f', str(docker_compose_file)] + command
             self.logger.info(f"Running command: {' '.join(cmd)}")
             subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except subprocess.CalledProcessError as e:
@@ -382,7 +382,7 @@ class CIPipeline:
         try:
             self.logger.info(f"Cleaning up containers for {service_dir.name} in {environment} environment...")
 
-            docker_compose_file = service_dir / f"docker-compose.{environment}.yml"
+            docker_compose_file = service_dir / f"docker-compose.yml"
             cmd = ['docker-compose', '-f', str(docker_compose_file), 'down', '--volumes', '--remove-orphans']
             subprocess.run(cmd, check=True)
             self.logger.info(f"Successfully cleaned up containers for {service_dir.name}.")
