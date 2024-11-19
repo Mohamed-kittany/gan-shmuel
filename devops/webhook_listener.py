@@ -59,19 +59,18 @@ def github_webhook():
         logger.info(f"Commit email: {commit_owner_email}")
         
         # Determine environment based on branch name
-        if branch_name in ['master', 'billing', 'weight']:
-            environment = 'test'
-        else:
+        if branch_name != 'master':
             logger.warning(f"Unknown branch: {branch_name}")
             return jsonify({"status": "error", "message": "Unknown branch"}), 400
 
-        logger.info(f"Running CI pipeline for environment: {environment}")
+        logger.info(f"Running CI pipeline...")
         
         # Call the CI pipeline with the appropriate environment
         try:
+            
+            main()
             # Set environment variable to control which .env file to load
-            os.environ['ENV'] = environment
-            main()  # Trigger the pipeline for the test environment
+             # Trigger the pipeline for the test environment
             
             # Run tests after deploying to the test environment
             # if not check_tests_passed():
