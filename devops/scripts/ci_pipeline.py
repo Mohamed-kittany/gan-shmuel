@@ -4,7 +4,7 @@ from logging_config import logger
 from pathlib import Path
 from shutil import copyfile
 from dotenv import load_dotenv
-
+from datetime import datetime
 load_dotenv(dotenv_path="env.test")
 
 # Get the path of the current directory
@@ -119,11 +119,38 @@ def copy_env_file(service_dir, environment):
 #         # Cleanup on error
 #         cleanup_containers(service_dir)
 #         raise
+def rename_existing_container(container_name):
+    """Renames an existing container if a conflict exists."""
+    try:
+        # Check if a container with the same name exists
+        result = subprocess.run(
+            ['docker', 'ps', '-a', '--filter', f'name={container_name}', '--format', '{{.Names}}'],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+
+        # If the container already exists, rename it
+        if result.stdout.strip():  # If a container name is returned
+            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+            new_name = f"{container_name}_{timestamp}"
+            logger.info(f"Renaming existing container '{container_name}' to '{new_name}'...")
+            subprocess.run(['docker', 'rename', result.stdout.strip(), new_name], check=True)
+            logger.info(f"Successfully renamed container to '{new_name}'")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error while renaming container: {e}")
+        raise
 
 def execute_docker_compose(commands, service_dir, environment):
     env_file = f'.env.{environment}'  # this could be .env.test or .env.prod
     project_name = f"{service_dir.stem}_{environment}"  # Use the service directory name as part of the project name
     
+    # Container name based on project name and service
+    container_name = f"{project_name}_billing-db-1"  # For example, change based on the service name if needed
+    
+    # Step 1: Check if container with the same name exists, and rename if necessary
+    rename_existing_container(container_name)
+
     logger.info(f"Running: docker-compose -f {str(service_dir / 'docker-compose.yml')} --env-file {env_file} {' '.join(commands)}")
     
     # Running Docker Compose with the project name to differentiate environments
@@ -132,6 +159,19 @@ def execute_docker_compose(commands, service_dir, environment):
         check=True,
         timeout=300  # 5 minute timeout
     )
+
+# def execute_docker_compose(commands, service_dir, environment):
+#     env_file = f'.env.{environment}'  # this could be .env.test or .env.prod
+#     project_name = f"{service_dir.stem}_{environment}"  # Use the service directory name as part of the project name
+    
+#     logger.info(f"Running: docker-compose -f {str(service_dir / 'docker-compose.yml')} --env-file {env_file} {' '.join(commands)}")
+    
+#     # Running Docker Compose with the project name to differentiate environments
+#     subprocess.run(
+#         ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', env_file, '-p', project_name] + commands,
+#         check=True,
+#         timeout=300  # 5 minute timeout
+#     )
 
 # def cleanup_containers(service_dir):
 #     """Clean up containers and networks created by docker-compose."""
@@ -160,17 +200,64 @@ def cleanup_containers(service_dir, environment):
     except Exception as e:
         logger.error(f"Error during cleanup: {e}")
 
-def build_and_deploy(service_dir, environment,other_service_dir=None):
+# def build_and_deploy(service_dir, environment,other_service_dir=None):
+#     """Build Docker images and deploy containers for a given service directory."""
+#     try:
+#         copy_env_file(service_dir, environment)
+#         # Step 2: Build Docker images from the updated Dockerfile
+#         logger.info(f"Building Docker containers for {service_dir}...")
+#         execute_docker_compose(['build', '--no-cache'], service_dir,environment)
+
+#         # Step 3: Start containers and run them
+#         logger.info(f"Starting Docker containers for {service_dir}...")
+#         execute_docker_compose(['up', '-d'], service_dir,environment)  # Added -d for detached mode
+        
+#         # Step 4: Check container health
+#         check_container_health(service_dir)
+        
+#     except Exception as e:
+#         logger.error(f"Build and deploy failed for {service_dir}: {e}")
+#          # Clean up containers for the current service
+#         cleanup_containers(service_dir,environment)
+#         # Also clean up the other service if it's provided
+#         if other_service_dir:
+#             cleanup_containers(other_service_dir,environment)
+#         raise
+
+
+#     """Runs the test suite and checks if tests passed."""
+#     try:
+#         # Run pytest or your preferred test framework (e.g., unittest)
+#         logger.info("Running tests in the test environment...")
+        
+#         # Run pytest and capture the exit code
+#         result = subprocess.run(['pytest', '--maxfail=1', '--disable-warnings', '-q'], 
+#                                 capture_output=True, text=True)
+        
+#         # If the return code is 0, it means tests passed
+#         if result.returncode == 0:
+#             logger.info("Tests passed successfully!")
+#             return True
+#         else:
+#             # If non-zero return code, tests failed
+#             logger.error(f"Tests failed with exit code {result.returncode}")
+#             logger.error(f"Test output: {result.stdout}\n{result.stderr}")
+#             return False
+#     except Exception as e:
+#         logger.error(f"Error running tests: {e}")
+#         return False
+
+def build_and_deploy(service_dir, environment, other_service_dir=None):
     """Build Docker images and deploy containers for a given service directory."""
     try:
         copy_env_file(service_dir, environment)
         # Step 2: Build Docker images from the updated Dockerfile
         logger.info(f"Building Docker containers for {service_dir}...")
-        execute_docker_compose(['build', '--no-cache'], service_dir,environment)
+        execute_docker_compose(['build', '--no-cache'], service_dir, environment)
 
         # Step 3: Start containers and run them
         logger.info(f"Starting Docker containers for {service_dir}...")
-        execute_docker_compose(['up', '-d'], service_dir,environment)  # Added -d for detached mode
+        execute_docker_compose(['up', '-d'], service_dir, environment)  # Added -d for detached mode
         
         # Step 4: Check container health
         check_container_health(service_dir)
@@ -178,34 +265,12 @@ def build_and_deploy(service_dir, environment,other_service_dir=None):
     except Exception as e:
         logger.error(f"Build and deploy failed for {service_dir}: {e}")
          # Clean up containers for the current service
-        cleanup_containers(service_dir,environment)
+        cleanup_containers(service_dir, environment)
         # Also clean up the other service if it's provided
         if other_service_dir:
-            cleanup_containers(other_service_dir,environment)
+            cleanup_containers(other_service_dir, environment)
         raise
 
-
-    """Runs the test suite and checks if tests passed."""
-    try:
-        # Run pytest or your preferred test framework (e.g., unittest)
-        logger.info("Running tests in the test environment...")
-        
-        # Run pytest and capture the exit code
-        result = subprocess.run(['pytest', '--maxfail=1', '--disable-warnings', '-q'], 
-                                capture_output=True, text=True)
-        
-        # If the return code is 0, it means tests passed
-        if result.returncode == 0:
-            logger.info("Tests passed successfully!")
-            return True
-        else:
-            # If non-zero return code, tests failed
-            logger.error(f"Tests failed with exit code {result.returncode}")
-            logger.error(f"Test output: {result.stdout}\n{result.stderr}")
-            return False
-    except Exception as e:
-        logger.error(f"Error running tests: {e}")
-        return False
 def check_tests_passed(test_directory, rollback=False):
     """Runs the test suite and checks if tests passed for a specific test directory."""
     try:
