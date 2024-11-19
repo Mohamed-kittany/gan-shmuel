@@ -119,9 +119,9 @@ def copy_env_file(service_dir, environment):
     target_env_path = service_dir / f'.env.{environment}'
     
     # Copy the environment file to the target location
-    # logger.info(f"Copying {env_file} to {target_env_path}...")
-    # # copyfile(env_file, target_env_path)
-    # logger.info(f"Successfully copied {env_file} to {target_env_path}")
+    logger.info(f"Copying {env_file} to {target_env_path}...")
+    copyfile(env_file, target_env_path)
+    logger.info(f"Successfully copied {env_file} to {target_env_path}")
 
 def execute_docker_compose(commands, service_dir, environment):
     try:
