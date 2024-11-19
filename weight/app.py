@@ -2,7 +2,7 @@ from flask import Flask, request, redirect, url_for, render_template, flash
 from werkzeug.utils import secure_filename
 import os
 import csv
-from db import get_db, close_db
+from db import get_db
 
 # Import the blueprints
 from routes.post_weight import bp as post_weight_bp
@@ -24,9 +24,9 @@ app.register_blueprint(get_item_bp)
 app.register_blueprint(get_session_bp)
 app.register_blueprint(health_bp)
 
-@app.teardown_appcontext
-def teardown_db(exception):
-    close_db(exception)
+# @app.teardown_appcontext
+# def teardown_db(exception):
+#     close_db(exception)
 
 app.secret_key = "supersecretkey"  # Necessary for flashing messages
 UPLOAD_FOLDER = './uploads'
