@@ -24,6 +24,12 @@ services:
         splunk-index: "main"
         splunk-source: "billing"
         splunk-sourcetype: "docker"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/health"]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      timeout: 5s
   # Billing Database Service
   billing-db:
     image: mysql:9.0.1
