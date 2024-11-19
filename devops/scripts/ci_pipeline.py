@@ -297,7 +297,7 @@ def main(rollback=False):
         clone_or_update_repo()
         if rollback:
             rollback_func()
-        load_environment('.env.test')
+        load_environment('/app/.env.test')
         # Step 2: Build and deploy both services in the test environment
         build_and_deploy(REPO_DIR / 'billing', environment)
         build_and_deploy(REPO_DIR / 'weight', environment, other_service_dir=REPO_DIR / 'billing')
@@ -317,7 +317,7 @@ def main(rollback=False):
         cleanup_containers(REPO_DIR / 'billing')
         cleanup_containers(REPO_DIR / 'weight')
         environment = 'prod' 
-        load_environment('.env.prod')
+        load_environment('/app/.env.prod')
         # Step 5: Deploy to production environment (if tests passed)
         logger.info("Deploying to production environment...")
         os.environ['ENV'] = 'prod'  # Switch environment to production
