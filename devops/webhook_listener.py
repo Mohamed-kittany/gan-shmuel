@@ -98,7 +98,7 @@ def github_webhook():
                 "author": author,
                 "commit_email": commit_owner_email,
                 "time": time,
-                "environment": environment
+                "environment": 'prod'
             }), 200
         except Exception as e:
             logger.error(f"CI pipeline failed: {e}")
