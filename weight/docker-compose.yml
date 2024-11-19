@@ -22,7 +22,7 @@ services:
     ports:
       - "${WEIGHT_DB_PORT:-3306}:3306" 
     volumes:
-      - ./schema.sql:/docker-entrypoint-initdb.d/weightdb.sql  
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql  
       - weight-db-data:/var/lib/mysql 
       - /app/.env.test:/app/.env.test
       - /app/.env.prod:/app/.env.prod
