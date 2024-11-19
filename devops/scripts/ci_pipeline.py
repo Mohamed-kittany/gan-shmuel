@@ -807,6 +807,7 @@ def main(rollback=False):
         # if not check_tests_passed(str(REPO_DIR / 'billing' / 'tests'), rollback):
         #     raise RuntimeError("Tests failed in the billing service. Aborting pipeline.")
         
+        
         # Clean up test environment
         logger.info("Cleaning up test environment...")
         cleanup_containers(REPO_DIR / 'billing', environment)
