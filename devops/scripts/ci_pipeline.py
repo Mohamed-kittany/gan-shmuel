@@ -419,8 +419,8 @@ class CIPipeline:
     def copy_env_files(self, source_dir: Path, dest_dir: Path) -> None:
         """Copies the environment files from source to destination."""
         try:
-            test_env_file = source_dir / '.env.test'
-            prod_env_file = source_dir / '.env.prod'
+            test_env_file = '/app/.env.test'
+            prod_env_file ='/app/.env.prod' 
             
             # Ensure destination directory exists
             dest_dir.mkdir(parents=True, exist_ok=True)
