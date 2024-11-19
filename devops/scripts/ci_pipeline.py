@@ -817,8 +817,8 @@ def main(rollback=False):
         environment = 'prod' 
         load_environment('/app/.env.prod')
         logger.info("Deploying to production environment...")
-        build_and_deploy(REPO_DIR / 'billing', environment, 'billing')
         build_and_deploy(REPO_DIR / 'weight', environment, 'weight')
+        build_and_deploy(REPO_DIR / 'billing', environment, 'billing')
 
         # Check production health
         logger.info("Checking health of production containers...")
