@@ -1,26 +1,31 @@
 services:
   # Weight Backend Service
   weight-backend:
+    container_name: ${WEIGHT_BACKEND_NAME:-weight-backend}
     build: 
       context: .
       dockerfile: Dockerfile
     ports:
-      - "${WEIGHT_BACKEND_PORT:-8080}:5000"  # Expose port only in prod (8080 or default)
+      - "${WEIGHT_BACKEND_PORT:-8080}:5000"  
     depends_on:
       - weight-db
     env_file:
-      - .env.${ENV}  # Environment-specific .env file (e.g., .env.test or .env.prod)
+      - .env.${ENV} 
     networks:
-      - ${NETWORK_NAME:-test-network}  # Default to test-network in test, prod-network in prod
+      - ${NETWORK_NAME:-test-network}  
     restart: always
 
   # Weight Database Service
   weight-db:
     image: mysql:9.0.1
+    container_name: ${WEIGHT_DB_NAME:-weight-db}
     ports:
-      - "${WEIGHT_DB_PORT:-3306}:3306"  # Expose port only in prod (3306 or default)
+      - "${WEIGHT_DB_PORT:-3306}:3306" 
     volumes:
-      - ./db/weightdb.sql:/docker-entrypoint-initdb.d/weightdb.sql  # Only needed in test, not prod
+      - ./db/weightdb.sql:/docker-entrypoint-initdb.d/weightdb.sql  
+      - weight-db-data:/var/lib/mysql 
+      - /app/.env.test:/app/.env.test
+      - /app/.env.prod:/app/.env.prod
     environment:
       MYSQL_ROOT_PASSWORD: ${WEIGHT_MYSQL_DATABASE_PASSWORD}
       MYSQL_DATABASE: ${WEIGHT_MYSQL_DATABASE_DB}
@@ -29,10 +34,14 @@ services:
       interval: 10s
       retries: 5
     networks:
-      - ${NETWORK_NAME:-test-network}  # Default to test-network in test, prod-network in prod
+      - ${NETWORK_NAME:-test-network}  
 
 networks:
   test-network:
     driver: bridge
   prod-network:
     driver: bridge
+
+volumes:
+  weight-db-data:
+    driver: local

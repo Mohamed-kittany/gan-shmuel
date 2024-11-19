@@ -15,6 +15,8 @@ def health():
     logger.info("Health check endpoint accessed")
     return 'ok'
 
+
+
 @app.route('/rollback', methods=['POST'])
 def rollback():
     try: 
@@ -57,19 +59,18 @@ def github_webhook():
         logger.info(f"Commit email: {commit_owner_email}")
         
         # Determine environment based on branch name
-        if branch_name in ['master', 'billing', 'weight']:
-            environment = 'test'
-        else:
+        if branch_name != 'master':
             logger.warning(f"Unknown branch: {branch_name}")
             return jsonify({"status": "error", "message": "Unknown branch"}), 400
 
-        logger.info(f"Running CI pipeline for environment: {environment}")
+        logger.info(f"Running CI pipeline...")
         
         # Call the CI pipeline with the appropriate environment
         try:
+            
+            main()
             # Set environment variable to control which .env file to load
-            os.environ['ENV'] = environment
-            main()  # Trigger the pipeline for the test environment
+             # Trigger the pipeline for the test environment
             
             # Run tests after deploying to the test environment
             # if not check_tests_passed():
@@ -87,7 +88,8 @@ def github_webhook():
             send_email(
                 subject="CI Pipeline Success",
                 body=f"CI pipeline executed successfully on commit by {author}.\n\nCommit email: {commit_owner_email}",
-                to_addresses=["ayalm1357@gmail.com", "ayalm1357@gmail.com"]
+                cc_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"],
+                to_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"],
             )
             
             return jsonify({
@@ -96,7 +98,7 @@ def github_webhook():
                 "author": author,
                 "commit_email": commit_owner_email,
                 "time": time,
-                "environment": environment
+                "environment": 'prod'
             }), 200
         except Exception as e:
             logger.error(f"CI pipeline failed: {e}")
@@ -105,7 +107,8 @@ def github_webhook():
             send_email(
                 subject="🚨 CI Pipeline Failed",
                 body=f"CI pipeline failed on commit by {author}.\n\nError: {str(e)}",
-                to_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"]
+                cc_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"],
+                to_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"],
             )
             return jsonify({"status": "error", "message": str(e)}), 500
     except Exception as e:

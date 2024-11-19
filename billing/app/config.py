@@ -6,8 +6,8 @@ from dotenv import load_dotenv, find_dotenv # type: ignore
 load_dotenv(find_dotenv())
 
 config = {
-    "MYSQL_DATABASE_HOST": os.getenv("MYSQL_DATABASE_HOST"),
-    "MYSQL_DATABASE_USER": os.getenv("MYSQL_DATABASE_USER"),
-    "MYSQL_DATABASE_PASSWORD": os.getenv("MYSQL_DATABASE_PASSWORD"),
-    "MYSQL_DATABASE_DB": os.getenv("MYSQL_DATABASE_DB"),
+    "MYSQL_DATABASE_HOST": os.getenv("BILLING_DB_NAME"),
+    "MYSQL_DATABASE_USER": os.getenv("BILLING_MYSQL_DATABASE_USER"),
+    "MYSQL_DATABASE_PASSWORD": os.getenv("BILLING_MYSQL_DATABASE_PASSWORD"),
+    "MYSQL_DATABASE_DB": os.getenv("BILLING_MYSQL_DATABASE_DB"),
 }

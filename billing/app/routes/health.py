@@ -2,6 +2,7 @@ import logging
 from flask import Blueprint, jsonify # type: ignore
 from ..services import health_service
 
+
 health_bp = Blueprint('health', __name__)
 logger = logging.getLogger(__name__)
 
@@ -16,5 +17,5 @@ def health_check():
     if http_code == 200:
         logger.info("Health check passed.")
     else:
-        logger.error("Health check failed.")
-    return jsonify(status), http_code
+        logger.error("Health check failed.!!!!!:)")
+    return jsonify(status), http_code 
