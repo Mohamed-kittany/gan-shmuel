@@ -643,6 +643,7 @@ def run_command(command: List[str], cwd: Path = None, check: bool = True) -> str
     Execute a shell command and return its output.
     """
     try:
+        logger.debug(f"Running command: {' '.join(command)}")
         result = subprocess.run(
             command,
             cwd=cwd,
@@ -650,6 +651,7 @@ def run_command(command: List[str], cwd: Path = None, check: bool = True) -> str
             capture_output=True,
             text=True
         )
+        logger.debug(f"Command output: {result.stdout.strip()}")
         return result.stdout.strip()
     except subprocess.CalledProcessError as e:
         logger.error(f"Command failed: {' '.join(command)}")
@@ -661,6 +663,7 @@ def run_command(command: List[str], cwd: Path = None, check: bool = True) -> str
 
 class DockerService:
     def __init__(self, service_dir: Path, service_name: str, env_file: str, is_production: bool = False):
+        logger.info(f"Initializing DockerService for {service_name} at {service_dir}")
         self.service_dir = service_dir
         self.service_name = service_name
         self.env_file = env_file
@@ -690,20 +693,27 @@ class DockerService:
 
     def is_healthy(self, project_name: str) -> bool:
         """Check if containers are healthy"""
+        logger.info(f"Checking health of {project_name}")
         time.sleep(10)  # Allow time for containers to start up
         result = run_command([*self.compose_cmd, '-p', project_name, 'ps'], self.service_dir)
-        return '(healthy)' in result and 'Exit' not in result
+        is_healthy = '(healthy)' in result and 'Exit' not in result
+        logger.debug(f"Health check for {project_name} returned: {is_healthy}")
+        return is_healthy
 
     def get_container_ports(self, project_name: str) -> List[str]:
         """Check the open ports for the containers"""
+        logger.info(f"Getting open ports for container {project_name}")
         result = run_command(
             ['docker', 'ps', '--filter', f'name={project_name}', '--format', '{{.Ports}}']
         )
-        return result.splitlines()
+        ports = result.splitlines()
+        logger.debug(f"Open ports for {project_name}: {ports}")
+        return ports
 
 
 class Deployment:
     def __init__(self, repo_url: str, base_dir: Path):
+        logger.info(f"Initializing deployment with repo URL: {repo_url} and base directory: {base_dir}")
         self.repo_url = repo_url
         self.base_dir = base_dir
         self.repo_dir = base_dir / "gan-shmuel"
@@ -711,11 +721,11 @@ class Deployment:
 
     def clone_repo(self) -> None:
         """Clone or update the repository"""
+        logger.info(f"Cloning or updating repository from {self.repo_url}")
         if not self.repo_dir.exists():
-            logger.info("Cloning repository...")
             run_command(['git', 'clone', self.repo_url, str(self.repo_dir)])
         else:
-            logger.info("Updating repository...")
+            logger.info(f"Updating repository at {self.repo_dir}")
             run_command(['git', 'fetch'], self.repo_dir)
             run_command(['git', 'reset', '--hard', 'origin/master'], self.repo_dir)
 
@@ -728,15 +738,17 @@ class Deployment:
                 result = run_command(['pytest', str(test_dir), '-v'], service_dir)
                 logger.info(f"Test results: {result}")
                 return 'failed' not in result.lower()
-            logger.warning(f"No tests found in {test_dir}")
-            return True
+            else:
+                logger.warning(f"No tests found in {test_dir}")
+                return True
         except Exception as e:
-            logger.error(f"Tests failed: {e}")
+            logger.error(f"Error running tests for {service_dir.name}: {e}")
             return False
 
     def deploy_service(self, service: DockerService, environment: str) -> bool:
         """Deploy the service to test environment and run tests"""
         try:
+            logger.info(f"Deploying {service.service_name} to {environment} environment")
             new_project = f"{service.service_name}_{environment}"
             service.build(new_project)
             service.start(new_project)
@@ -752,6 +764,7 @@ class Deployment:
 
     def check_ports_open(self, project_name: str, required_ports: List[int]) -> bool:
         """Check if required ports are open for a given project"""
+        logger.info(f"Checking if required ports are open for {project_name}")
         open_ports = []
         container_ports = DockerService(self.repo_dir, project_name, '', False).get_container_ports(project_name)
         
@@ -761,12 +774,15 @@ class Deployment:
                     open_ports.append(port_range)
 
         if len(open_ports) == len(required_ports):
+            logger.info(f"All required ports are open for {project_name}")
             return True
-        return False
+        else:
+            logger.warning(f"Not all required ports are open for {project_name}. Open ports: {open_ports}")
+            return False
 
     def switch_traffic(self, old_project: str, new_project: str) -> None:
         """Switch traffic based on port check (manual method without a load balancer)"""
-        logger.info(f"Switching traffic from {old_project} to {new_project}")
+        logger.info(f"Attempting to switch traffic from {old_project} to {new_project}")
         
         # Assuming that the first project with the required ports will be the active one
         if self.check_ports_open(new_project, [8080, 8090, 3000]):
@@ -779,13 +795,14 @@ class Deployment:
 
     def deploy_to_prod(self, service: DockerService) -> bool:
         """Deploy the service to production environment using blue-green deployment"""
-        logger.info(f"Deploying {service.service_name} to production")
+        logger.info(f"Deploying {service.service_name} to production environment")
         
         # Define blue and green project names
         blue_project = f"{service.service_name}_blue"
         green_project = f"{service.service_name}_green"
 
         # Deploy to Green environment (staging)
+        logger.info(f"Deploying to Green environment for {service.service_name}")
         service.build(green_project)
         service.start(green_project)
 
