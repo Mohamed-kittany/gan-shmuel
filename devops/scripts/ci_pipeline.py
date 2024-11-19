@@ -235,9 +235,34 @@ def check_container_health(service_dir, retries=5, delay=10):
         logger.error(f"Error checking container health: {e}")
         raise
 
+def load_environment(env_file):
+    """Load environment variables from file, overriding existing ones."""
+    # Clear relevant environment variables before loading new ones
+    env_vars_to_clear = [
+        'BILLING_BACKEND_PORT',
+        'BILLING_DB_PORT',
+        'WEIGHT_BACKEND_PORT',
+        'WEIGHT_DB_PORT',
+        'BILLING_MYSQL_DATABASE_PASSWORD',
+        'BILLING_MYSQL_DATABASE_DB',
+        'NETWORK_NAME',
+        'ENV',
+        # Add any other environment variables that need to be cleared
+    ]
+    
+    for var in env_vars_to_clear:
+        if var in os.environ:
+            del os.environ[var]
+    
+    # Load new environment variables
+    load_dotenv(dotenv_path=env_file, override=True)
+    
+    # Set ENV explicitly
+    environment = 'test' if env_file.endswith('.test') else 'prod'
+    os.environ['ENV'] = environment
 def main(rollback=False):
     """Main function to process both billing and weight services."""
-    environment = os.getenv('ENV', 'test')  
+    environment = 'test' 
     
     try:
         # Step 1: Clone and pull latest changes from the repository
@@ -247,7 +272,7 @@ def main(rollback=False):
         pull_latest_code()
         if rollback:
             rollback_func()
-
+        load_environment('.env.test')
         # Step 2: Build and deploy both services in the test environment
         build_and_deploy(REPO_DIR / 'billing', environment)
         build_and_deploy(REPO_DIR / 'weight', environment, other_service_dir=REPO_DIR / 'billing')
@@ -267,6 +292,7 @@ def main(rollback=False):
         cleanup_containers(REPO_DIR / 'billing')
         cleanup_containers(REPO_DIR / 'weight')
         
+        load_environment('.env.prod')
         # Step 5: Deploy to production environment (if tests passed)
         logger.info("Deploying to production environment...")
         os.environ['ENV'] = 'prod'  # Switch environment to production
