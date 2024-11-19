@@ -147,7 +147,7 @@ class CIPipeline:
         
         # Initialize managers
         self.repo_manager = RepositoryManager(repo_url, self.repo_dir)
-        self.docker_manager = DockerManager(self.logger)
+        self.docker_manager = DockerManager()
 
     def load_environment(self, env_file: str) -> str:
         """Load environment variables from file."""
