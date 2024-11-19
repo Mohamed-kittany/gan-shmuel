@@ -37,7 +37,7 @@ services:
       - /app/.env.prod:/app/.env.prod
     environment:
       MYSQL_ROOT_PASSWORD: ${BILLING_MYSQL_DATABASE_PASSWORD}
-      MYSQL_DATABASE: ${BILLING_MYSQL_DATABASE_DB}
+      MYSQL_DATABASE: billdb
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
