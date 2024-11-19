@@ -1,6 +1,6 @@
 from flask import g
 import pymysql
-from weight.config import config
+from config import config
 
 def get_db():
     if 'db' not in g:  # Correct the syntax error here

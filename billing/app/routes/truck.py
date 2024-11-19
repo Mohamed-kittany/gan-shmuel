@@ -1,6 +1,7 @@
 import logging
 from flask import Blueprint, jsonify, request # type: ignore
 from ..services import TruckService
+import os
 
 WEIGHT_SERVICE_URL = f'http://{os.getenv("WEIGHT_SERVICE_HOST")}:{os.getenv("WEIGHT_SERVICE_PORT")}'
 
