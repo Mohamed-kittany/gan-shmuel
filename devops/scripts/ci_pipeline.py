@@ -1079,7 +1079,7 @@ class CIPipeline:
 
                 # Build Docker containers
             self.logger.info(f"Building Docker containers for {service_type} service...")
-            self._execute_docker_compose(['build', '--no-cache'], service_dir, environment, service_type)
+            self._execute_docker_compose(['--quiet','build', '--no-cache'], service_dir, environment, service_type)
 
             # Start containers
             self.logger.info(f"Starting Docker containers for {service_type} service...")
@@ -1100,107 +1100,179 @@ class CIPipeline:
             self._cleanup_containers(service_dir, environment)
             if other_service_dir:
                 self._cleanup_containers(other_service_dir, environment)
-            raise
+            raise   
 
-
-def run_pipeline(self, rollback: bool = False):
-    """
+    def run_pipeline(self, rollback: bool = False):
+        """
     Execute the complete CI/CD pipeline.
     
     Args:
         rollback (bool): Whether to perform a rollback operation
     """
-    try:
-        # Clone or update repository
-        self.repo_manager.clone_or_update()
-        
-        if rollback:
-            self.repo_manager.rollback()
-
-        # Load test environment
-        test_environment = self.load_environment('/app/.env.test')
-        
-        # Paths to services
-        billing_service_dir = self.repo_dir / 'billing'
-        weight_service_dir = self.repo_dir / 'weight'
-
-        # Build and deploy test environment
-        self.logger.info("Deploying to test environment...")
-        
-        # Deploy billing service first
-        self.build_and_deploy(
-            service_dir=billing_service_dir, 
-            environment=test_environment, 
-            service_type='billing'
-        )
-        
-        # Deploy weight service, passing billing as the other service
-        self.build_and_deploy(
-            service_dir=weight_service_dir, 
-            environment=test_environment, 
-            service_type='weight', 
-            other_service_dir=billing_service_dir
-        )
-
-        # Run tests
-        self.logger.info("Running tests in the test environment...")
         try:
-            self._run_tests(billing_service_dir)
-        except Exception as test_error:
-            self.logger.error(f"Tests failed for billing service: {test_error}")
+            # Clone or update repository
+            self.repo_manager.clone_or_update()
+
+            if rollback:
+                self.repo_manager.rollback()
+
+            # Load test environment
+            test_environment = self.load_environment('/app/.env.test')
+
+            # Paths to services
+            billing_service_dir = self.repo_dir / 'billing'
+            weight_service_dir = self.repo_dir / 'weight'
+
+            # Build and deploy test environment
+            self.logger.info("Deploying to test environment...")
+
+            # Deploy billing service first
+            self.build_and_deploy(
+                service_dir=billing_service_dir, 
+                environment=test_environment, 
+                service_type='billing'
+            )
+
+            # Deploy weight service, passing billing as the other service
+            self.build_and_deploy(
+                service_dir=weight_service_dir, 
+                environment=test_environment, 
+                service_type='weight', 
+                other_service_dir=billing_service_dir
+            )
+
+            # Run tests
+            self.logger.info("Running tests in the test environment...")
+            try:
+                self._run_tests(billing_service_dir)
+            except Exception as test_error:
+                self.logger.error(f"Tests failed for billing service: {test_error}")
+                raise
+
+            # Cleanup test environment
+            self.logger.info("Cleaning up test environment...")
+            self._cleanup_containers(billing_service_dir, test_environment)
+            self._cleanup_containers(weight_service_dir, test_environment)
+
+            # Deploy to production
+            prod_environment = self.load_environment('/app/.env.prod')
+            self.logger.info("Deploying to production environment...")
+
+            # Deploy weight service first in production
+            self.build_and_deploy(
+                service_dir=weight_service_dir, 
+                environment=prod_environment, 
+                service_type='weight'
+            )
+
+            # Deploy billing service in production
+            self.build_and_deploy(
+                service_dir=billing_service_dir, 
+                environment=prod_environment, 
+                service_type='billing'
+            )
+
+            # Check production health
+            self.logger.info("Checking health of production containers...")
+            self._check_container_health(billing_service_dir)
+            self._check_container_health(weight_service_dir)
+
+            # If rollback was requested, push changes to GitHub
+            if rollback:
+                self._push_rollback_to_github()
+
+            self.logger.info(f"CI pipeline completed successfully in test and prod environments.")
+
+        except Exception as e:
+            self.logger.error(f"CI pipeline failed: {e}")
+
+            # Attempt cleanup
+            try:
+                self._cleanup_containers(self.repo_dir / 'billing', 'test')
+                self._cleanup_containers(self.repo_dir / 'weight', 'test')
+                # self._cleanup_containers(self.repo_dir / 'billing', 'prod')
+                # self._cleanup_containers(self.repo_dir / 'weight', 'prod')
+            except Exception as cleanup_error:
+                self.logger.error(f"Cleanup failed: {cleanup_error}")
+
+            # If not already in a rollback, trigger rollback
+            if not rollback:
+                self.run_pipeline(rollback=True)
+
+            raise
+    def _execute_docker_compose(self, command: List[str], service_dir: Path, environment: str, service_type: str) -> None:
+        """Execute docker-compose command for build or up."""
+        try:
+            docker_compose_file = service_dir / f"docker-compose.{environment}.yml"
+            cmd = ['docker-compose', '-f', str(docker_compose_file)] + command
+            self.logger.info(f"Running command: {' '.join(cmd)}")
+            subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"Docker compose command failed for {service_type}: {e}")
             raise
 
-        # Cleanup test environment
-        self.logger.info("Cleaning up test environment...")
-        self._cleanup_containers(billing_service_dir, test_environment)
-        self._cleanup_containers(weight_service_dir, test_environment)
-
-        # Deploy to production
-        prod_environment = self.load_environment('/app/.env.prod')
-        self.logger.info("Deploying to production environment...")
-        
-        # Deploy weight service first in production
-        self.build_and_deploy(
-            service_dir=weight_service_dir, 
-            environment=prod_environment, 
-            service_type='weight'
-        )
-        
-        # Deploy billing service in production
-        self.build_and_deploy(
-            service_dir=billing_service_dir, 
-            environment=prod_environment, 
-            service_type='billing'
-        )
-
-        # Check production health
-        self.logger.info("Checking health of production containers...")
-        self._check_container_health(billing_service_dir)
-        self._check_container_health(weight_service_dir)
-
-        # If rollback was requested, push changes to GitHub
-        if rollback:
-            self._push_rollback_to_github()
-
-        self.logger.info(f"CI pipeline completed successfully in test and prod environments.")
-
-    except Exception as e:
-        self.logger.error(f"CI pipeline failed: {e}")
-        
-        # Attempt cleanup
+    def _check_container_health(self, service_dir: Path) -> None:
+        """Check health of the deployed containers."""
         try:
-            self._cleanup_containers(self.repo_dir / 'billing', 'test')
-            self._cleanup_containers(self.repo_dir / 'weight', 'test')
-            # self._cleanup_containers(self.repo_dir / 'billing', 'prod')
-            # self._cleanup_containers(self.repo_dir / 'weight', 'prod')
-        except Exception as cleanup_error:
-            self.logger.error(f"Cleanup failed: {cleanup_error}")
+            service_name = service_dir.name  # Assuming the directory name is the service name.
+            self.logger.info(f"Checking health of containers for {service_name}...")
 
-        # If not already in a rollback, trigger rollback
-        if not rollback:
-            self.run_pipeline(rollback=True)
-        
-        raise
+            # Here, you can run a docker command or health check for your containers
+            result = subprocess.run(
+                ['docker', 'ps', '--filter', f'name={service_name}', '--format', '{{.Names}}'],
+                capture_output=True, text=True, check=True
+            )
+
+            if not result.stdout.strip():
+                self.logger.error(f"No containers found for {service_name}.")
+                raise RuntimeError(f"Health check failed for {service_name} containers.")
+            
+            # Additional health checks can be added here if needed (e.g., checking container logs).
+            self.logger.info(f"Health check passed for {service_name} containers.")
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"Health check failed for {service_dir.name}: {e}")
+            raise
+
+    def _cleanup_containers(self, service_dir: Path, environment: str) -> None:
+        """Clean up containers for a given service."""
+        try:
+            self.logger.info(f"Cleaning up containers for {service_dir.name} in {environment} environment...")
+
+            docker_compose_file = service_dir / f"docker-compose.{environment}.yml"
+            cmd = ['docker-compose', '-f', str(docker_compose_file), 'down', '--volumes', '--remove-orphans']
+            subprocess.run(cmd, check=True)
+            self.logger.info(f"Successfully cleaned up containers for {service_dir.name}.")
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"Failed to clean up containers for {service_dir.name}: {e}")
+            raise
+
+    def _run_tests(self, service_dir: Path) -> None:
+        """Run tests for the deployed service."""
+        try:
+            self.logger.info(f"Running tests for {service_dir.name}...")
+
+            # Assuming the tests are run via a docker-compose command or a specific script
+            test_cmd = ['docker-compose', '-f', str(service_dir / 'docker-compose.test.yml'), 'run', 'test']
+            subprocess.run(test_cmd, check=True)
+            self.logger.info(f"Tests completed successfully for {service_dir.name}.")
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"Tests failed for {service_dir.name}: {e}")
+            raise
+
+    def _push_rollback_to_github(self) -> None:
+        """Push the rollback changes to GitHub."""
+        try:
+            self.logger.info("Pushing rollback changes to GitHub...")
+            # Commit and push the rollback changes
+            subprocess.run(['git', 'add', '.'], check=True)
+            subprocess.run(['git', 'commit', '-m', 'Rollback to previous state'], check=True)
+            subprocess.run(['git', 'push'], check=True)
+            self.logger.info("Rollback changes pushed to GitHub successfully.")
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"Failed to push rollback changes to GitHub: {e}")
+            raise
+
+
 def main():
     pipeline = CIPipeline()
     pipeline.run_pipeline()
