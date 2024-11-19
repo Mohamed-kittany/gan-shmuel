@@ -286,7 +286,7 @@ def load_environment(env_file):
     os.environ['ENV'] = environment
 def main(rollback=False):
     """Main function to process both billing and weight services."""
-    environment = 'test' 
+   
     
     try:
         # # Step 1: Clone and pull latest changes from the repository
@@ -298,6 +298,7 @@ def main(rollback=False):
         if rollback:
             rollback_func()
         load_environment('/app/.env.test')
+        environment = 'test' 
         # Step 2: Build and deploy both services in the test environment
         build_and_deploy(REPO_DIR / 'billing', environment)
         build_and_deploy(REPO_DIR / 'weight', environment, other_service_dir=REPO_DIR / 'billing')
