@@ -1,29 +1,29 @@
 services:
-  # Billing Backend Service
-  billing-backend:
+  # Weight Backend Service
+  weight-backend:
     build: 
       context: .
       dockerfile: Dockerfile
     ports:
-      - "${BILLING_BACKEND_PORT:-8085}:5000"  # Expose port only in prod (8085 or default)
+      - "${WEIGHT_BACKEND_PORT:-8080}:5000"  # Expose port only in prod (8080 or default)
     depends_on:
-      - billing-db
+      - weight-db
     env_file:
       - .env.${ENV}  # Environment-specific .env file (e.g., .env.test or .env.prod)
     networks:
       - ${NETWORK_NAME:-test-network}  # Default to test-network in test, prod-network in prod
     restart: always
 
-  # Billing Database Service
-  billing-db:
+  # Weight Database Service
+  weight-db:
     image: mysql:9.0.1
     ports:
-      - "${BILLING_DB_PORT:-3307}:3306"  # Expose port only in prod (3307 or default)
+      - "${WEIGHT_DB_PORT:-3306}:3306"  # Expose port only in prod (3306 or default)
     volumes:
-      - ./database/billingdb.sql:/docker-entrypoint-initdb.d/billingdb.sql  # Only needed in test, not prod
+      - ./db/weightdb.sql:/docker-entrypoint-initdb.d/weightdb.sql  # Only needed in test, not prod
     environment:
-      MYSQL_ROOT_PASSWORD: ${BILLING_MYSQL_DATABASE_PASSWORD}
-      MYSQL_DATABASE: ${BILLING_MYSQL_DATABASE_DB}
+      MYSQL_ROOT_PASSWORD: ${WEIGHT_MYSQL_DATABASE_PASSWORD}
+      MYSQL_DATABASE: ${WEIGHT_MYSQL_DATABASE_DB}
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s

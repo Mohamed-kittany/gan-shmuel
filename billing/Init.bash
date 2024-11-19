@@ -11,6 +11,7 @@ MYSQL_DATABASE_PASSWORD=root
 MYSQL_DATABASE_DB=billdb
 EOL
 echo ".env file created successfully."
+
 # Step 2: Create a Python virtual environment
 echo "Setting up Python virtual environment..."
 #cd billing
@@ -20,6 +21,7 @@ if [ ! -d "venv" ]; then
 else
     echo "Virtual environment already exists in 'billing/venv'."
 fi
+
 # Step 3: Activate the virtual environment and install requirements
 echo "Activating virtual environment and installing dependencies..."
 source ./venv/bin/activate
@@ -30,6 +32,7 @@ else
     echo "Failed to install dependencies. Please check the logs for details."
     exit 1
 fi
+
 # Step 4: Run the Docker container
 echo "Starting MySQL Docker container..."
 docker run -d --rm --name mysql-db -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=billdb -v $(pwd)/database/billingdb.sql:/docker-entrypoint-initdb.d/billingdb.sql mysql:9.0.1
@@ -39,6 +42,7 @@ else
     echo "Failed to start the MySQL Docker container. Please check the logs for details."
     exit 1
 fi
+
 # Step 5: Wait for 10 seconds and check if the container is running
 echo "Waiting 10 seconds to verify if the container is running..."
 sleep 10
@@ -49,6 +53,7 @@ else
     echo "MySQL Docker container is not running. Please check the logs for issues."
     exit 1
 fi
+
 # Return to the original directory
 cd ..
 
