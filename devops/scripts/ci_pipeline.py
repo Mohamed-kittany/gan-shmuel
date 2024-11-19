@@ -316,13 +316,13 @@ def main(rollback=False):
         logger.info("Cleaning up test environment...")
         cleanup_containers(REPO_DIR / 'billing')
         cleanup_containers(REPO_DIR / 'weight')
-        
+        environment = 'prod' 
         load_environment('.env.prod')
         # Step 5: Deploy to production environment (if tests passed)
         logger.info("Deploying to production environment...")
         os.environ['ENV'] = 'prod'  # Switch environment to production
-        build_and_deploy(REPO_DIR / 'billing', 'prod')
-        build_and_deploy(REPO_DIR / 'weight', 'prod', other_service_dir=REPO_DIR / 'billing')
+        build_and_deploy(REPO_DIR / 'billing', environment)
+        build_and_deploy(REPO_DIR / 'weight', environment, other_service_dir=REPO_DIR / 'billing')
 
 
         logger.info(f"CI pipeline completed successfully in {environment} and prod environments.")
