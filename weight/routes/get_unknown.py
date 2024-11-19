@@ -7,7 +7,7 @@ bp = Blueprint('get_unknown', __name__)
 def get_unknown():
     db = get_db()
     cursor = db.cursor()
-    cursor.execute('SELECT id FROM containers_registered WHERE weight IS NULL')
+    cursor.execute('SELECT container_id FROM containers_registered WHERE weight IS NULL')
     result = cursor.fetchall()
-    unknown_ids = [row['id'] for row in result]
+    unknown_ids = [row['container_id'] for row in result]
     return jsonify(unknown_ids), 200
