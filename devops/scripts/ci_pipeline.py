@@ -103,30 +103,30 @@ def rollback_func():
         logger.error(f"Failed to rollback to the previous commit: {e}")
         raise
 
-# def copy_env_file(service_dir, environment):
-#     """Copy the correct .env file based on the environment."""
-#     env_file_map = {
-#         'prod': '/app/.env.prod',   # Path to the prod environment file
-#         'test': '/app/.env.test',   # Path to the test environment file
-#     }
+def copy_env_file(service_dir, environment):
+    """Copy the correct .env file based on the environment."""
+    env_file_map = {
+        'prod': '/app/.env.prod',   # Path to the prod environment file
+        'test': '/app/.env.test',   # Path to the test environment file
+    }
     
-#     # Choose the correct env file based on the environment
-#     env_file = env_file_map.get(environment)
-#     if not env_file:
-#         raise ValueError(f"Unknown environment: {environment}")
+    # Choose the correct env file based on the environment
+    env_file = env_file_map.get(environment)
+    if not env_file:
+        raise ValueError(f"Unknown environment: {environment}")
     
-#     # Define the destination path for the .env file
-#     target_env_path = service_dir / f'.env.{environment}'
+    # Define the destination path for the .env file
+    target_env_path = service_dir / f'.env.{environment}'
     
-#     # Copy the environment file to the target location
-#     # logger.info(f"Copying {env_file} to {target_env_path}...")
-#     # # copyfile(env_file, target_env_path)
-#     # logger.info(f"Successfully copied {env_file} to {target_env_path}")
+    # Copy the environment file to the target location
+    # logger.info(f"Copying {env_file} to {target_env_path}...")
+    # # copyfile(env_file, target_env_path)
+    # logger.info(f"Successfully copied {env_file} to {target_env_path}")
 
 def execute_docker_compose(commands, service_dir, environment):
     try:
-        # copy_env_file(service_dir, environment)
-        env_file = f'/app/.env.{environment}'
+        copy_env_file(service_dir, environment)
+        env_file = f'.env.{environment}'
         logger.info(f"Running: docker-compose -f {str(service_dir / 'docker-compose.yml')} --env-file {env_file} {' '.join(commands)}")
         
         # Run with timeout to avoid hanging
