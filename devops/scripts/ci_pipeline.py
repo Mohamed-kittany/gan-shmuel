@@ -119,7 +119,7 @@ def copy_env_file(service_dir, environment):
 #         # Cleanup on error
 #         cleanup_containers(service_dir)
 #         raise
-def rename_existing_container(container_name):
+def rename_existing_container(service_name, container_name):
     """Renames an existing container if a conflict exists."""
     try:
         # Check if a container with the same name exists
@@ -134,22 +134,29 @@ def rename_existing_container(container_name):
         if result.stdout.strip():  # If a container name is returned
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
             new_name = f"{container_name}_{timestamp}"
-            logger.info(f"Renaming existing container '{container_name}' to '{new_name}'...")
+            logger.info(f"Renaming existing container '{container_name}' for service '{service_name}' to '{new_name}'...")
             subprocess.run(['docker', 'rename', result.stdout.strip(), new_name], check=True)
-            logger.info(f"Successfully renamed container to '{new_name}'")
+            logger.info(f"Successfully renamed container '{container_name}' to '{new_name}'")
     except subprocess.CalledProcessError as e:
         logger.error(f"Error while renaming container: {e}")
         raise
 
-def execute_docker_compose(commands, service_dir, environment):
+
+def execute_docker_compose(commands, service_dir, environment, service_type):
     env_file = f'.env.{environment}'  # this could be .env.test or .env.prod
     project_name = f"{service_dir.stem}_{environment}"  # Use the service directory name as part of the project name
     
-    # Container name based on project name and service
-    container_name = f"{project_name}_billing-db-1"  # For example, change based on the service name if needed
+    # Dynamically fetch container names for both billing and weight services
+    service_backend_name = os.getenv(f"{service_type.upper()}_BACKEND_NAME", f"{service_type}-backend")
+    service_db_name = os.getenv(f"{service_type.upper()}_DB_NAME", f"{service_type}-db")
     
-    # Step 1: Check if container with the same name exists, and rename if necessary
-    rename_existing_container(container_name)
+    # Container name based on project name and service
+    container_name_backend = f"{project_name}_{service_backend_name}-1"  # E.g., prod-billing-backend-1
+    container_name_db = f"{project_name}_{service_db_name}-1"  # E.g., prod-billing-db-1
+
+    # Step 1: Check if containers with these names exist, and rename if necessary
+    rename_existing_container(service_type, container_name_backend)
+    rename_existing_container(service_type, container_name_db)
 
     logger.info(f"Running: docker-compose -f {str(service_dir / 'docker-compose.yml')} --env-file {env_file} {' '.join(commands)}")
     
