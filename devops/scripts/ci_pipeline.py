@@ -12,53 +12,77 @@ CURRENT_DIR = Path(__file__).parent
 REPO_DIR = CURRENT_DIR / "gan-shmuel"  # Path to the cloned repository
 class CloneRepositoryError(Exception):
     pass
-def clone_repository():
-    """Clones the Git repository if it doesn't exist locally or initializes it if mounted."""
-    if not REPO_DIR.exists():
-        logger.info("Repository not found. Cloning repository into 'gan-shmuel' folder...")
-        try:
-            subprocess.run(['git', 'clone', 'https://github.com/AM8151/gan-shmuel.git', str(REPO_DIR)], check=True)
-            logger.info(f"Successfully cloned the repository into {REPO_DIR}")
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to clone the repository: {e}")
-            raise CloneRepositoryError("Failed to clone the repository")
-    else:
-        logger.info("Repository directory exists. Checking Git status...")
-        try:
-            # Check if it's a git repository
-            subprocess.run(['git', 'status'], cwd=REPO_DIR, check=True, capture_output=True)
-            logger.info("Git repository found. Proceeding with pulling latest changes.")
-        except subprocess.CalledProcessError:
-            logger.info("Directory exists but not a Git repository. Initializing...")
-            try:
-                # Initialize git and set up remote
-                subprocess.run(['git', 'init'], cwd=REPO_DIR, check=True)
-                subprocess.run(['git', 'remote', 'add', 'origin', 'https://github.com/AM8151/gan-shmuel.git'], cwd=REPO_DIR, check=True)
-                subprocess.run(['git', 'fetch'], cwd=REPO_DIR, check=True)
-                logger.info("Git repository initialized successfully")
-            except subprocess.CalledProcessError as e:
-                logger.error(f"Failed to initialize git repository: {e}")
-                raise CloneRepositoryError("Failed to initialize git repository")
-def pull_latest_code():
-    """Pull the latest code from the GitHub repository (from the master branch)."""
-    logger.info("Pulling latest code from GitHub...")
-
+def run_subprocess(command, cwd=None, timeout=300, capture_output=True, check=True):
+    """Run a subprocess command with error handling."""
     try:
-        try:
-            subprocess.run(['git', 'checkout', 'master'], cwd=REPO_DIR, check=True, capture_output=True)
-        except subprocess.CalledProcessError:
-            # If branch doesn't exist, create it tracking remote
-            subprocess.run(['git', 'checkout', '-b', 'master', 'origin/master'], cwd=REPO_DIR, check=True)
-        
-        # Ensure we're tracking the remote branch
-        subprocess.run(['git', 'branch', '--set-upstream-to=origin/master', 'master'], cwd=REPO_DIR, check=True)
-        
-        # Pull latest changes
-        subprocess.run(['git', 'pull'], cwd=REPO_DIR, check=True)
-        logger.info("Successfully pulled latest code from master branch")
+        result = subprocess.run(command, cwd=cwd, timeout=timeout, capture_output=capture_output, text=True, check=check)
+        return result.stdout
     except subprocess.CalledProcessError as e:
-        logger.error(f"Failed to pull latest code from master: {e}")
+        logger.error(f"Command '{' '.join(command)}' failed: {e.stderr.strip()}")
         raise
+    except subprocess.TimeoutExpired:
+        logger.error(f"Command '{' '.join(command)}' timed out.")
+        raise
+
+# def clone_repository():
+#     """Clones the Git repository if it doesn't exist locally or initializes it if mounted."""
+#     if not REPO_DIR.exists():
+#         logger.info("Repository not found. Cloning repository into 'gan-shmuel' folder...")
+#         try:
+#             subprocess.run(['git', 'clone', 'https://github.com/AM8151/gan-shmuel.git', str(REPO_DIR)], check=True)
+#             logger.info(f"Successfully cloned the repository into {REPO_DIR}")
+#         except subprocess.CalledProcessError as e:
+#             logger.error(f"Failed to clone the repository: {e}")
+#             raise CloneRepositoryError("Failed to clone the repository")
+#     else:
+#         logger.info("Repository directory exists. Checking Git status...")
+#         try:
+#             # Check if it's a git repository
+#             subprocess.run(['git', 'status'], cwd=REPO_DIR, check=True, capture_output=True)
+#             logger.info("Git repository found. Proceeding with pulling latest changes.")
+#         except subprocess.CalledProcessError:
+#             logger.info("Directory exists but not a Git repository. Initializing...")
+#             try:
+#                 # Initialize git and set up remote
+#                 subprocess.run(['git', 'init'], cwd=REPO_DIR, check=True)
+#                 subprocess.run(['git', 'remote', 'add', 'origin', 'https://github.com/AM8151/gan-shmuel.git'], cwd=REPO_DIR, check=True)
+#                 subprocess.run(['git', 'fetch'], cwd=REPO_DIR, check=True)
+#                 logger.info("Git repository initialized successfully")
+#             except subprocess.CalledProcessError as e:
+#                 logger.error(f"Failed to initialize git repository: {e}")
+#                 raise CloneRepositoryError("Failed to initialize git repository")
+# def pull_latest_code():
+#     """Pull the latest code from the GitHub repository (from the master branch)."""
+#     logger.info("Pulling latest code from GitHub...")
+
+#     try:
+#         try:
+#             subprocess.run(['git', 'checkout', 'master'], cwd=REPO_DIR, check=True, capture_output=True)
+#         except subprocess.CalledProcessError:
+#             # If branch doesn't exist, create it tracking remote
+#             subprocess.run(['git', 'checkout', '-b', 'master', 'origin/master'], cwd=REPO_DIR, check=True)
+        
+#         # Ensure we're tracking the remote branch
+#         subprocess.run(['git', 'branch', '--set-upstream-to=origin/master', 'master'], cwd=REPO_DIR, check=True)
+        
+#         # Pull latest changes
+#         subprocess.run(['git', 'pull'], cwd=REPO_DIR, check=True)
+#         logger.info("Successfully pulled latest code from master branch")
+#     except subprocess.CalledProcessError as e:
+#         logger.error(f"Failed to pull latest code from master: {e}")
+#         raise
+def clone_or_update_repo():
+    """Clone the repository or pull the latest changes."""
+    if not REPO_DIR.exists():
+        logger.info("Cloning repository...")
+        try:
+            run_subprocess(['git', 'clone', 'https://github.com/AM8151/gan-shmuel.git', str(REPO_DIR)])
+        except Exception as e:
+            raise CloneRepositoryError(f"Failed to clone repository: {e}")
+    else:
+        logger.info("Repository exists. Pulling latest changes...")
+        run_subprocess(['git', 'fetch'], cwd=REPO_DIR)
+        run_subprocess(['git', 'reset', '--hard', 'origin/master'], cwd=REPO_DIR)
 
 def rollback_func():
     """Rollback to the previous commit in the repository."""
@@ -79,29 +103,29 @@ def rollback_func():
         logger.error(f"Failed to rollback to the previous commit: {e}")
         raise
 
-def copy_env_file(service_dir, environment):
-    """Copy the correct .env file based on the environment."""
-    env_file_map = {
-        'prod': '/app/.env.prod',   # Path to the prod environment file
-        'test': '/app/.env.test',   # Path to the test environment file
-    }
+# def copy_env_file(service_dir, environment):
+#     """Copy the correct .env file based on the environment."""
+#     env_file_map = {
+#         'prod': '/app/.env.prod',   # Path to the prod environment file
+#         'test': '/app/.env.test',   # Path to the test environment file
+#     }
     
-    # Choose the correct env file based on the environment
-    env_file = env_file_map.get(environment)
-    if not env_file:
-        raise ValueError(f"Unknown environment: {environment}")
+#     # Choose the correct env file based on the environment
+#     env_file = env_file_map.get(environment)
+#     if not env_file:
+#         raise ValueError(f"Unknown environment: {environment}")
     
-    # Define the destination path for the .env file
-    target_env_path = service_dir / f'.env.{environment}'
+#     # Define the destination path for the .env file
+#     target_env_path = service_dir / f'.env.{environment}'
     
-    # Copy the environment file to the target location
-    logger.info(f"Copying {env_file} to {target_env_path}...")
-    copyfile(env_file, target_env_path)
-    logger.info(f"Successfully copied {env_file} to {target_env_path}")
+#     # Copy the environment file to the target location
+#     # logger.info(f"Copying {env_file} to {target_env_path}...")
+#     # # copyfile(env_file, target_env_path)
+#     # logger.info(f"Successfully copied {env_file} to {target_env_path}")
 
 def execute_docker_compose(commands, service_dir, environment):
     try:
-        copy_env_file(service_dir, environment)
+        # copy_env_file(service_dir, environment)
         env_file = f'.env.{environment}'
         logger.info(f"Running: docker-compose -f {str(service_dir / 'docker-compose.yml')} --env-file {env_file} {' '.join(commands)}")
         
@@ -265,11 +289,12 @@ def main(rollback=False):
     environment = 'test' 
     
     try:
-        # Step 1: Clone and pull latest changes from the repository
-        clone_repository()
+        # # Step 1: Clone and pull latest changes from the repository
+        # clone_repository()
 
-        # Rollback to the previous commit if rollback flag is set
-        pull_latest_code()
+        # # Rollback to the previous commit if rollback flag is set
+        # pull_latest_code()
+        clone_or_update_repo()
         if rollback:
             rollback_func()
         load_environment('.env.test')
