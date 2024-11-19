@@ -6,7 +6,7 @@ from pyexcel_ods import get_data as read_ods
 
 
 class RateService:
-    RATES_FILE_PATH = os.path.join(os.getcwd(), "in", "rates.xlsx")
+    RATES_FILE_PATH = os.path.join(os.getcwd(), "in", "rates.xlsx")  # Path to save the uploaded rates file
 
     @staticmethod
     def process_and_save_rates(filepath):

@@ -1,0 +1,44 @@
+# Environment variables
+.env
+
+.env* /venv* /env*
+
+
+splunk-config
+# Python bytecode
+*.pyc
+__pycache__/
+
+# Virtual environment
+venv/
+gan_shmuel/
+
+# Logs
+logs/
+*.log
+*.out
+*.err
+
+# MySQL and database files
+# *.sql
+*.sqlite3
+*.db
+
+# Flask and other cache files
+instance/
+.mypy_cache/
+.pytest_cache/
+.cache/
+
+# PyCharm
+.idea/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+#database
+/database/
