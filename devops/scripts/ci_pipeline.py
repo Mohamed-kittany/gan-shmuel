@@ -257,25 +257,38 @@ def cleanup_containers(service_dir, environment):
 def build_and_deploy(service_dir, environment, other_service_dir=None):
     """Build Docker images and deploy containers for a given service directory."""
     try:
+        # Step 1: Copy the appropriate environment file for the service
         copy_env_file(service_dir, environment)
+        
+        # Dynamically determine service type based on service_dir
+        service_type = service_dir.name.lower()  # assuming the directory name is the service type ('billing' or 'weight')
+        
         # Step 2: Build Docker images from the updated Dockerfile
-        logger.info(f"Building Docker containers for {service_dir}...")
-        execute_docker_compose(['build', '--no-cache'], service_dir, environment)
+        logger.info(f"Building Docker containers for {service_type} service...")
+        execute_docker_compose(['build', '--no-cache'], service_dir, environment, service_type)
 
-        # Step 3: Start containers and run them
-        logger.info(f"Starting Docker containers for {service_dir}...")
-        execute_docker_compose(['up', '-d'], service_dir, environment)  # Added -d for detached mode
+        # Step 3: Start containers and run them in detached mode
+        logger.info(f"Starting Docker containers for {service_type} service...")
+        execute_docker_compose(['up', '-d'], service_dir, environment, service_type)  # Added -d for detached mode
         
-        # Step 4: Check container health
+        # Step 4: Check container health for the deployed service
         check_container_health(service_dir)
-        
+
+        # If there is another service that needs cleanup, handle it
+        if other_service_dir:
+            logger.info(f"Cleaning up containers for the other service: {other_service_dir}")
+            cleanup_containers(other_service_dir, environment)
+
     except Exception as e:
         logger.error(f"Build and deploy failed for {service_dir}: {e}")
-         # Clean up containers for the current service
+        
+        # Clean up containers for the current service
         cleanup_containers(service_dir, environment)
+        
         # Also clean up the other service if it's provided
         if other_service_dir:
             cleanup_containers(other_service_dir, environment)
+        
         raise
 
 def check_tests_passed(test_directory, rollback=False):
