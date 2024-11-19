@@ -18,4 +18,4 @@ def health_check():
         logger.info("Health check passed.")
     else:
         logger.error("Health check failed.!!!!!:)")
-    return jsonify(status), http_code
+    return jsonify(status), http_code 
