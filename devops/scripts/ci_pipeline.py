@@ -1027,80 +1027,80 @@ class CIPipeline:
         os.environ['ENV'] = environment
         return environment
 
-def build_and_deploy(self, 
-                     service_dir: Path, 
-                     environment: str, 
-                     service_type: str, 
-                     other_service_dir: Optional[Path] = None):
-    """
-    Build Docker images and deploy containers for a given service directory.
-    
-    Args:
-        service_dir (Path): Directory containing the service's docker-compose file
-        environment (str): Deployment environment (test/prod)
-        service_type (str): Type of service (billing/weight)
-        other_service_dir (Optional[Path]): Another service directory to clean up
-    """
-    try:
-        backend_port = None
-        db_port = None
-        need_port_update = False
-        
-        # Only check existing containers if we're in production
-        if environment == 'prod':
-            backend_name = f"{service_type}_prod_backend"
-            db_name = f"{service_type}_prod_db"
-            
-            # Check if containers are running
-            backend_running = self.docker_manager.check_container_running(backend_name)
-            db_running = self.docker_manager.check_container_running(db_name)
-            
-            if backend_running or db_running:
-                need_port_update = True
-                
-                # Get current ports if containers are running
-                if backend_running:
-                    backend_port = self.docker_manager.get_container_port(backend_name, "backend")
-                    self.docker_manager.rename_existing_container(service_type, backend_name)
-                
-                if db_running:
-                    db_port = self.docker_manager.get_container_port(db_name, "db")
-                    self.docker_manager.rename_existing_container(service_type, db_name)
-        
-        # Assign new ports only if needed
-        if not backend_port:
-            backend_port = self.docker_manager.assign_ports(service_type="backend")
-        if not db_port:
-            db_port = self.docker_manager.assign_ports(service_type="db")
-        
-        # Update environment file if ports changed
-        if need_port_update:
-            self._update_env_file(service_dir, service_type, backend_port, db_port, environment)
+    def build_and_deploy(self, 
+                         service_dir: Path, 
+                         environment: str, 
+                         service_type: str, 
+                         other_service_dir: Optional[Path] = None):
+        """
+        Build Docker images and deploy containers for a given service directory.
 
-        # Build Docker containers
-        self.logger.info(f"Building Docker containers for {service_type} service...")
-        self._execute_docker_compose(['build', '--no-cache'], service_dir, environment, service_type)
+        Args:
+            service_dir (Path): Directory containing the service's docker-compose file
+            environment (str): Deployment environment (test/prod)
+            service_type (str): Type of service (billing/weight)
+            other_service_dir (Optional[Path]): Another service directory to clean up
+        """
+        try:
+            backend_port = None
+            db_port = None
+            need_port_update = False
 
-        # Start containers
-        self.logger.info(f"Starting Docker containers for {service_type} service...")
-        self._execute_docker_compose(['up', '-d'], service_dir, environment, service_type)
-        
-        # Check container health
-        self._check_container_health(service_dir)
+            # Only check existing containers if we're in production
+            if environment == 'prod':
+                backend_name = f"{service_type}_prod_backend"
+                db_name = f"{service_type}_prod_db"
 
-        # Clean up other service if specified
-        if other_service_dir:
-            self.logger.info(f"Cleaning up containers for the other service: {other_service_dir}")
-            self._cleanup_containers(other_service_dir, environment)
+                # Check if containers are running
+                backend_running = self.docker_manager.check_container_running(backend_name)
+                db_running = self.docker_manager.check_container_running(db_name)
 
-    except Exception as e:
-        self.logger.error(f"Build and deploy failed for {service_dir}: {e}")
-        
-        # Cleanup on failure
-        self._cleanup_containers(service_dir, environment)
-        if other_service_dir:
-            self._cleanup_containers(other_service_dir, environment)
-        raise
+                if backend_running or db_running:
+                    need_port_update = True
+
+                    # Get current ports if containers are running
+                    if backend_running:
+                        backend_port = self.docker_manager.get_container_port(backend_name, "backend")
+                        self.docker_manager.rename_existing_container(service_type, backend_name)
+
+                    if db_running:
+                        db_port = self.docker_manager.get_container_port(db_name, "db")
+                        self.docker_manager.rename_existing_container(service_type, db_name)
+
+                # Assign new ports only if needed
+                if not backend_port:
+                    backend_port = self.docker_manager.assign_ports(service_type="backend")
+                if not db_port:
+                    db_port = self.docker_manager.assign_ports(service_type="db")
+
+                # Update environment file if ports changed
+                if need_port_update:
+                    self._update_env_file(service_dir, service_type, backend_port, db_port, environment)
+
+                # Build Docker containers
+            self.logger.info(f"Building Docker containers for {service_type} service...")
+            self._execute_docker_compose(['build', '--no-cache'], service_dir, environment, service_type)
+
+            # Start containers
+            self.logger.info(f"Starting Docker containers for {service_type} service...")
+            self._execute_docker_compose(['up', '-d'], service_dir, environment, service_type)
+
+            # Check container health
+            self._check_container_health(service_dir)
+
+            # Clean up other service if specified
+            if other_service_dir:
+                self.logger.info(f"Cleaning up containers for the other service: {other_service_dir}")
+                self._cleanup_containers(other_service_dir, environment)
+
+        except Exception as e:
+            self.logger.error(f"Build and deploy failed for {service_dir}: {e}")
+
+            # Cleanup on failure
+            self._cleanup_containers(service_dir, environment)
+            if other_service_dir:
+                self._cleanup_containers(other_service_dir, environment)
+            raise
 
 
 def run_pipeline(self, rollback: bool = False):
@@ -1191,8 +1191,8 @@ def run_pipeline(self, rollback: bool = False):
         try:
             self._cleanup_containers(self.repo_dir / 'billing', 'test')
             self._cleanup_containers(self.repo_dir / 'weight', 'test')
-            self._cleanup_containers(self.repo_dir / 'billing', 'prod')
-            self._cleanup_containers(self.repo_dir / 'weight', 'prod')
+            # self._cleanup_containers(self.repo_dir / 'billing', 'prod')
+            # self._cleanup_containers(self.repo_dir / 'weight', 'prod')
         except Exception as cleanup_error:
             self.logger.error(f"Cleanup failed: {cleanup_error}")
 
