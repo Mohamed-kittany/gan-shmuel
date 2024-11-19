@@ -1079,7 +1079,7 @@ class CIPipeline:
 
                 # Build Docker containers
             self.logger.info(f"Building Docker containers for {service_type} service...")
-            self._execute_docker_compose(['--quiet','build', '--no-cache'], service_dir, environment, service_type)
+            self._execute_docker_compose(['build', '--no-cache'], service_dir, environment, service_type)
 
             # Start containers
             self.logger.info(f"Starting Docker containers for {service_type} service...")
@@ -1204,7 +1204,7 @@ class CIPipeline:
         """Execute docker-compose command for build or up."""
         try:
             docker_compose_file = service_dir / f"docker-compose.{environment}.yml"
-            cmd = ['docker-compose', '-f', str(docker_compose_file)] + command
+            cmd = ['docker-compose', '--quiet', '-f', str(docker_compose_file)] + command
             self.logger.info(f"Running command: {' '.join(cmd)}")
             subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except subprocess.CalledProcessError as e:
