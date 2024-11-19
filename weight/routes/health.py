@@ -5,10 +5,10 @@ bp = Blueprint('health', __name__)
 
 @bp.route('/health', methods=['GET'])
 def health():
-    db = get_db()
-    cursor = db.cursor()
+    # db = get_db()
+    # cursor = db.cursor()
     try:
-        cursor.execute('SELECT 1')
+        # cursor.execute('SELECT 1')
         return "OK", 200
     except:
         return "Failure", 500

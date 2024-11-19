@@ -2,6 +2,7 @@ from flask import g
 import pymysql
 from config import config
 from dotenv import load_dotenv 
+
 def get_db():
     if 'db' not in g:  # Correct the syntax error here
         g.db = pymysql.connect(
