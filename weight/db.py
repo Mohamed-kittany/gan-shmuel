@@ -1,13 +1,14 @@
 from flask import g
 import pymysql
+from weight.config import config
 
 def get_db():
     if 'db' not in g:  # Correct the syntax error here
         g.db = pymysql.connect(
-            host="db",
-            user="user",
-            password="password",
-            database="weights_db",
+            host=config['MYSQL_DATABASE_HOST'],
+            user=config['MYSQL_DATABASE_USER'],
+            password=config['MYSQL_DATABASE_PASSWORD'],
+            database=config['MYSQL_DATABASE_DB'],
             cursorclass=pymysql.cursors.DictCursor
         )
         initialize_db(g.db)  # Initialize the database schema

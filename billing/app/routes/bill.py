@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 import logging
 from ..services import BillService
 
-WEIGHT_SERVICE_URL = "http://weight-app:6000"
+WEIGHT_SERVICE_URL = f'http://{os.getenv("WEIGHT_SERVICE_HOST")}:{os.getenv("WEIGHT_SERVICE_PORT")}'
 
 
 billing_bp = Blueprint('bill', __name__)

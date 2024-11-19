@@ -1,26 +1,47 @@
 services:
-  db:
-    image: mysql:latest
-    container_name: mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: weights_db
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
+  # Weight Backend Service
+  weight-backend:
+    container_name: ${WEIGHT_BACKEND_NAME:-weight-backend}
+    build: 
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "3306:3306"
-    volumes:
-      - db_data:/var/lib/mysql
-      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
-
-  web:
-    build: .
-    container_name: flask_app
-    command: flask run --host=0.0.0.0 --port=5000
-    ports:
-      - "5000:5000"
+      - "${WEIGHT_BACKEND_PORT:-8080}:5000"  
     depends_on:
-      - db
+      - weight-db
+    env_file:
+      - .env.${ENV} 
+    networks:
+      - ${NETWORK_NAME:-test-network}  
+    restart: always
+
+  # Weight Database Service
+  weight-db:
+    image: mysql:9.0.1
+    container_name: ${WEIGHT_DB_NAME:-weight-db}
+    ports:
+      - "${WEIGHT_DB_PORT:-3306}:3306" 
+    volumes:
+      - ./schema.sql:/docker-entrypoint-initdb.d/weightdb.sql  
+      - weight-db-data:/var/lib/mysql 
+      - /app/.env.test:/app/.env.test
+      - /app/.env.prod:/app/.env.prod
+    environment:
+      MYSQL_ROOT_PASSWORD: ${WEIGHT_MYSQL_DATABASE_PASSWORD}
+      MYSQL_DATABASE: ${WEIGHT_MYSQL_DATABASE_DB}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+    networks:
+      - ${NETWORK_NAME:-test-network}  
+
+networks:
+  test-network:
+    driver: bridge
+  prod-network:
+    driver: bridge
 
 volumes:
-  db_data:
+  weight-db-data:
+    driver: local
