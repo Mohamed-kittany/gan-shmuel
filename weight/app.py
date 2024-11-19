@@ -80,4 +80,4 @@ def process_csv(filepath):
         print(f"Error processing CSV: {e}")
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
