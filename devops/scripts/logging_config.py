@@ -63,7 +63,7 @@ def setup_logging():
 
     # Splunk HTTP Handler
     splunk_url = "http://splunk:8088"  # Replace with your Splunk HEC endpoint
-    splunk_token = "20031e81-9335-4eb5-8b5c-2728193f80a5"  # Replace with your HEC token
+    splunk_token = "f304dc24-869b-4907-a3bf-6d47f9f8d1bf"  # Replace with your HEC token
     splunk_handler = SplunkHttpHandler(splunk_url, splunk_token)
     splunk_handler.setFormatter(formatter)
     splunk_handler.setLevel(logging.INFO)
