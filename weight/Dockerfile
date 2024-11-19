@@ -1,8 +1,13 @@
-FROM mysql:5.7
-# Set environment variables for MySQL
-# Need Secure the MYSQL password
-ENV MYSQL_ROOT_PASSWORD=123
-ENV MYSQL_DATABASE=weight
-EXPOSE 5001
-# Change the MySQL port to 5001 using a custom entrypoint
-CMD ["mysqld", "--port=5001"]
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY . /app
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+EXPOSE 5000
+
+ENV FLASK_APP=app.py
+
+CMD ["flask", "run", "--host=0.0.0.0"]
