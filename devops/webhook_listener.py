@@ -15,8 +15,6 @@ def health():
     logger.info("Health check endpoint accessed")
     return 'ok'
 
-
-
 @app.route('/rollback', methods=['POST'])
 def rollback():
     try: 
