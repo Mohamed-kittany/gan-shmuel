@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional, List
 from dotenv import load_dotenv, set_key
 from datetime import datetime
-
+import shutil
 
 
 class RepositoryManager:
@@ -259,7 +259,8 @@ class CIPipeline:
 
             if rollback:
                 self.repo_manager.rollback()
-
+                
+            self.copy_env_files(self.repo_dir, self.base_dir)
             # Load test environment
             test_environment = self.load_environment('/app/.env.test')
 
@@ -415,7 +416,31 @@ class CIPipeline:
         except subprocess.CalledProcessError as e:
             self.logger.error(f"Failed to push rollback changes to GitHub: {e}")
             raise
+    def copy_env_files(self, source_dir: Path, dest_dir: Path) -> None:
+        """Copies the environment files from source to destination."""
+        try:
+            test_env_file = source_dir / '.env.test'
+            prod_env_file = source_dir / '.env.prod'
+            
+            # Ensure destination directory exists
+            dest_dir.mkdir(parents=True, exist_ok=True)
 
+            # Copy the environment files
+            if test_env_file.exists():
+                shutil.copy(test_env_file, dest_dir / '.env.test')
+                self.logger.info(f"Copied .env.test to {dest_dir / '.env.test'}")
+            else:
+                self.logger.warning(".env.test file not found.")
+            
+            if prod_env_file.exists():
+                shutil.copy(prod_env_file, dest_dir / '.env.prod')
+                self.logger.info(f"Copied .env.prod to {dest_dir / '.env.prod'}")
+            else:
+                self.logger.warning(".env.prod file not found.")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to copy environment files: {e}")
+            raise 
 
 def main():
     pipeline = CIPipeline()
