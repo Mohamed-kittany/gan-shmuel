@@ -544,10 +544,10 @@ def assign_ports(service_type):
     available_ports = []
     for port in port_range:
         result = subprocess.run(
-            ['lsof', '-i', f':{port}'],
+            ['docker', 'ps', '--filter', f'publish={port}', '--format', '{{.Ports}}'],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
-        if result.returncode != 0:  # Port is available
+        if result.returncode != 0 or not result.stdout.strip():  # Port is available
             available_ports.append(port)
 
     if not available_ports:
