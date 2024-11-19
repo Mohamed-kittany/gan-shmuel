@@ -95,36 +95,65 @@ def copy_env_file(service_dir, environment):
     copyfile(env_file, target_env_path)
     logger.info(f"Successfully copied {env_file} to {target_env_path}")
 
-def execute_docker_compose(commands, service_dir, environment):
-    try:
+# def execute_docker_compose(commands, service_dir, environment):
+#     try:
    
-        env_file = f'.env.{environment}'
-        logger.info(f"Running: docker-compose -f {str(service_dir / 'docker-compose.yml')} --env-file {env_file} {' '.join(commands)}")
+#         env_file = f'.env.{environment}'
+#         logger.info(f"Running: docker-compose -f {str(service_dir / 'docker-compose.yml')} --env-file {env_file} {' '.join(commands)}")
         
-        # Run with timeout to avoid hanging
-        process = subprocess.run(
-            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', env_file] + commands,
-            check=True,
-            timeout=300  # 5 minute timeout
-        )
+#         # Run with timeout to avoid hanging
+#         process = subprocess.run(
+#             ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', env_file] + commands,
+#             check=True,
+#             timeout=300  # 5 minute timeout
+#         )
         
-        logger.info(f"Successfully executed: {' '.join(commands)} in {service_dir}")
-    except subprocess.TimeoutExpired:
-        logger.error(f"Docker compose command timed out. Cleaning up...")
-        # Force cleanup on timeout
-        cleanup_containers(service_dir)
-        raise
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Error executing docker compose {' '.join(commands)} in {service_dir}: {e}")
-        # Cleanup on error
-        cleanup_containers(service_dir)
-        raise
-def cleanup_containers(service_dir):
+#         logger.info(f"Successfully executed: {' '.join(commands)} in {service_dir}")
+#     except subprocess.TimeoutExpired:
+#         logger.error(f"Docker compose command timed out. Cleaning up...")
+#         # Force cleanup on timeout
+#         cleanup_containers(service_dir)
+#         raise
+#     except subprocess.CalledProcessError as e:
+#         logger.error(f"Error executing docker compose {' '.join(commands)} in {service_dir}: {e}")
+#         # Cleanup on error
+#         cleanup_containers(service_dir)
+#         raise
+
+def execute_docker_compose(commands, service_dir, environment):
+    env_file = f'.env.{environment}'  # this could be .env.test or .env.prod
+    project_name = f"{service_dir.stem}_{environment}"  # Use the service directory name as part of the project name
+    
+    logger.info(f"Running: docker-compose -f {str(service_dir / 'docker-compose.yml')} --env-file {env_file} {' '.join(commands)}")
+    
+    # Running Docker Compose with the project name to differentiate environments
+    subprocess.run(
+        ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', env_file, '-p', project_name] + commands,
+        check=True,
+        timeout=300  # 5 minute timeout
+    )
+
+# def cleanup_containers(service_dir):
+#     """Clean up containers and networks created by docker-compose."""
+#     try:
+#         logger.info("Cleaning up containers and networks...")
+#         subprocess.run(
+#             ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'down', '--volumes', '--remove-orphans'],
+#             check=False,  # Don't raise exception if cleanup fails
+#             timeout=60
+#         )
+#     except Exception as e:
+#         logger.error(f"Error during cleanup: {e}")
+def cleanup_containers(service_dir, environment):
     """Clean up containers and networks created by docker-compose."""
     try:
-        logger.info("Cleaning up containers and networks...")
+        env_file = f'.env.{environment}'
+        project_name = f"{service_dir.stem}_{environment}"
+        
+        logger.info(f"Cleaning up {environment} containers and networks...")
+
         subprocess.run(
-            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'down', '--volumes', '--remove-orphans'],
+            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', env_file, '-p', project_name, 'down', '--volumes', '--remove-orphans'],
             check=False,  # Don't raise exception if cleanup fails
             timeout=60
         )
