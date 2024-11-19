@@ -126,7 +126,7 @@ def rollback_func():
 def execute_docker_compose(commands, service_dir, environment):
     try:
         # copy_env_file(service_dir, environment)
-        env_file = f'.env.{environment}'
+        env_file = f'/app/.env.{environment}'
         logger.info(f"Running: docker-compose -f {str(service_dir / 'docker-compose.yml')} --env-file {env_file} {' '.join(commands)}")
         
         # Run with timeout to avoid hanging
