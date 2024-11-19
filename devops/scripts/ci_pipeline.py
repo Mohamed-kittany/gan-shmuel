@@ -178,10 +178,10 @@ def build_and_deploy(service_dir, environment,other_service_dir=None):
     except Exception as e:
         logger.error(f"Build and deploy failed for {service_dir}: {e}")
          # Clean up containers for the current service
-        cleanup_containers(service_dir)
+        cleanup_containers(service_dir,environment)
         # Also clean up the other service if it's provided
         if other_service_dir:
-            cleanup_containers(other_service_dir)
+            cleanup_containers(other_service_dir,environment)
         raise
 
 
@@ -310,8 +310,8 @@ def main(rollback=False):
         
         # Step 4: Clean up test environment before deploying to production
         logger.info("Cleaning up test environment...")
-        cleanup_containers(REPO_DIR / 'billing')
-        cleanup_containers(REPO_DIR / 'weight')
+        cleanup_containers(REPO_DIR / 'billing',environment)
+        cleanup_containers(REPO_DIR / 'weight',environment)
         environment = 'prod' 
         load_environment('/app/.env.prod')
         # Step 5: Deploy to production environment (if tests passed)
