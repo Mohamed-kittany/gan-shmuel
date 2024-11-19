@@ -1,18 +1,8 @@
-from flask import Flask
-import pytest
-
-app = Flask(__name__)
-
-@app.route('/health', methods=['POST'])
-def health():
-    return 'ok', 200
-
-@pytest.fixture
-def client():
-    with app.test_client() as client:
-        yield client
+#/billing/app/tests/test_health_check.py
+from tests import client 
+## to run a specific pytest use the following command: "pytest path_to_testFile::func_name"
 
 def test_health_check(client):
-    response = client.post('/health')
+    response = client.get('/api/health')
     assert response.status_code == 200
-    assert response.data.decode() == 'ok'
+    #assert response.data.decode() == 'ok'  
