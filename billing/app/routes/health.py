@@ -2,6 +2,7 @@ import logging
 from flask import Blueprint, jsonify
 from ..services import health_service
 
+
 health_bp = Blueprint('health', __name__)
 logger = logging.getLogger(__name__)
 
