@@ -867,7 +867,7 @@ from datetime import datetime
 
 class RepositoryManager:
     """Manages repository operations like cloning and updating."""
-    def __init__(self, repo_url: str, repo_path: Path, logger: logging.Logger):
+    def __init__(self, repo_url: str, repo_path: Path):
         self.repo_url = repo_url
         self.repo_path = repo_path
         self.logger = logger
