@@ -17,5 +17,5 @@ def health_check():
     if http_code == 200:
         logger.info("Health check passed.")
     else:
-        logger.error("Health check failed.")
+        logger.error("Health check failed.!!!!!")
     return jsonify(status), http_code
