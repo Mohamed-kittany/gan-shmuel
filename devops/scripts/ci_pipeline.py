@@ -381,7 +381,6 @@ def main(rollback=False):
         load_environment('/app/.env.prod')
         # Step 5: Deploy to production environment (if tests passed)
         logger.info("Deploying to production environment...")
-        os.environ['ENV'] = 'prod'  # Switch environment to production
         build_and_deploy(REPO_DIR / 'billing', environment)
         build_and_deploy(REPO_DIR / 'weight', environment, other_service_dir=REPO_DIR / 'billing')
 
