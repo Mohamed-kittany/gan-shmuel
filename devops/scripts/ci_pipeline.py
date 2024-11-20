@@ -302,13 +302,13 @@ def load_environment(env_file):
 def main(rollback=False):
     """Main function to process both billing and weight services."""
     try:
-        
+        environment = 'test' 
         logger.info("CI Started")
         clone_or_update_repo()
         if rollback:
             rollback_func()
         load_environment('/app/.env.test')
-        environment = 'test' 
+    
 
         # Build and deploy test environment
         build_and_deploy(REPO_DIR / 'billing', environment, 'billing')
