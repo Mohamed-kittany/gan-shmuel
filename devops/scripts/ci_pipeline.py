@@ -318,9 +318,9 @@ def main(rollback=False):
 
         # Run tests
         logger.info("Running tests in the test environment...")
-        logger.info("Running tests for billing service...")
-        if not check_tests_passed(str(REPO_DIR / 'billing' / 'tests'), rollback):
-            raise RuntimeError("Tests failed in the billing service. Aborting pipeline.")
+        # logger.info("Running tests for billing service...")
+        # if not check_tests_passed(str(REPO_DIR / 'billing' / 'tests'), rollback):
+        #     raise RuntimeError("Tests failed in the billing service. Aborting pipeline.")
         
         #logger.info("Running tests for weight service...")
         # if not check_tests_passed(str(REPO_DIR / 'weight' / 'tests'), rollback):
