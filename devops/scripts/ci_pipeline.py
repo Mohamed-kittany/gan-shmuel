@@ -397,7 +397,7 @@ def main(rollback=False):
         cleanup_containers(REPO_DIR / 'weight',environment)
         # Reverse the rollback if it was done
         if rollback:
-            reverse_hard_reset()
+            reverse_rollback()
         else:
             main(rollback=True)
         raise
