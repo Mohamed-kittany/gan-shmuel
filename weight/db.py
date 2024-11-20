@@ -12,7 +12,7 @@ def get_db():
     return mysql.connector.connect(
         host=config['MYSQL_DATABASE_HOST'],
         user=config['MYSQL_DATABASE_USER'],
-        # password=config['MYSQL_DATABASE_PASSWORD'],
+        password=config['MYSQL_DATABASE_PASSWORD'],
         database=config['MYSQL_DATABASE_DB']
     )
 
