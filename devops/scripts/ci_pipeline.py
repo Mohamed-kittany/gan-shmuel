@@ -107,6 +107,36 @@ def rollback_func():
         logger.error(f"Failed to rollback to the previous commit: {e}")
         raise
 
+def reverse_rollback():
+    """Reverse the most recent `git reset --hard` operation."""
+    try:
+        # Get the reflog entries
+        result = subprocess.run(
+            ['git', 'reflog'],
+            cwd=REPO_DIR,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        reflog_lines = result.stdout.splitlines()
+
+        # Extract the second most recent commit hash (before the reset)
+        if len(reflog_lines) < 2:
+            raise ValueError("Reflog does not contain enough entries to reverse the reset.")
+
+        previous_commit_hash = reflog_lines[1].split()[0]
+
+        # Reset to the previous commit hash
+        subprocess.run(['git', 'reset', '--hard', previous_commit_hash], cwd=REPO_DIR, check=True)
+
+        print(f"Successfully reversed to commit {previous_commit_hash}.")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to reverse the hard reset: {e}")
+        raise
+    except IndexError:
+        print("Could not parse reflog entries.")
+        raise
+
 def rename_existing_container(service_name, container_name):
     """Renames an existing container if a conflict exists."""
     try:
@@ -365,7 +395,10 @@ def main(rollback=False):
         # Ensure cleanup in case of failure
         cleanup_containers(REPO_DIR / 'billing',environment)
         cleanup_containers(REPO_DIR / 'weight',environment)
-        if not rollback:
+        # Reverse the rollback if it was done
+        if rollback:
+            reverse_hard_reset()
+        else rollback:
             main(rollback=True)
         raise
 
