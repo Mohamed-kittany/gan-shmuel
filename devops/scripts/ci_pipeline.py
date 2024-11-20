@@ -517,8 +517,11 @@ def get_container_port(container_name, port_type):
         else:  # db
             port_pattern = "3000-3090"
             
-        result = run_subprocess(
-            ['docker', 'port', container_name]
+        result = subprocess.run(
+            ['docker', 'port', container_name],
+            capture_output=True,
+            text=True,
+            check=True
         )
         
         # Parse the port from the output
@@ -540,11 +543,11 @@ def assign_ports(service_type):
     
     available_ports = []
     for port in port_range:
-        result = run_subprocess(
-            ['docker', 'ps', '--filter', f'publish={port}', '--format', '{{.Ports}}'],
+        result = subprocess.run(
+            ['lsof', '-i', f':{port}'],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
-        if result.returncode != 0 or not result.stdout.strip():  # Port is available
+        if result.returncode != 0:  # Port is available
             available_ports.append(port)
 
     if not available_ports:
@@ -582,12 +585,12 @@ def rollback_func():
     try:
         logger.info("Rolling back to the previous commit...")
         try:
-            run_subprocess(['git', 'checkout', 'master'], cwd=REPO_DIR)
+            subprocess.run(['git', 'checkout', 'master'], cwd=REPO_DIR, check=True, capture_output=True)
         except subprocess.CalledProcessError:
-            run_subprocess(['git', 'checkout', '-b', 'master', 'origin/master'], cwd=REPO_DIR)
+            subprocess.run(['git', 'checkout', '-b', 'master', 'origin/master'], cwd=REPO_DIR, check=True)
         
-        run_subprocess(['git', 'branch', '--set-upstream-to=origin/master', 'master'], cwd=REPO_DIR)
-        run_subprocess(['git', 'reset', '--hard', 'HEAD^'], cwd=REPO_DIR)
+        subprocess.run(['git', 'branch', '--set-upstream-to=origin/master', 'master'], cwd=REPO_DIR, check=True)
+        subprocess.run(['git', 'reset', '--hard', 'HEAD^'], cwd=REPO_DIR, check=True)
         logger.info("Successfully rolled back to the previous commit")
     except subprocess.CalledProcessError as e:
         logger.error(f"Failed to rollback to the previous commit: {e}")
@@ -596,15 +599,18 @@ def rollback_func():
 def rename_existing_container(service_name, container_name):
     """Renames an existing container if a conflict exists."""
     try:
-        result = run_subprocess(
-            ['docker', 'ps', '-a', '--filter', f'name={container_name}', '--format', '{{.Names}}']
+        result = subprocess.run(
+            ['docker', 'ps', '-a', '--filter', f'name={container_name}', '--format', '{{.Names}}'],
+            capture_output=True,
+            text=True,
+            check=True
         )
 
         if result.stdout.strip():
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
             new_name = f"{container_name}_{timestamp}"
             logger.info(f"Renaming existing container '{container_name}' for service '{service_name}' to '{new_name}'...")
-            run_subprocess(['docker', 'rename', result.stdout.strip(), new_name])
+            subprocess.run(['docker', 'rename', result.stdout.strip(), new_name], check=True)
             logger.info(f"Successfully renamed container '{container_name}' to '{new_name}'")
     except subprocess.CalledProcessError as e:
         logger.error(f"Error while renaming container: {e}")
@@ -617,17 +623,25 @@ def execute_docker_compose(commands, service_dir, environment, service_type):
     
     logger.info(f"Running: docker-compose -f {str(service_dir / 'docker-compose.yml')} --env-file {env_file} {' '.join(commands)}")
     
-    run_subprocess(
-        ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', env_file, '-p', project_name] + commands)
+    subprocess.run(
+        ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', env_file, '-p', project_name] + commands,
+        check=True,
+        timeout=300
+    )
 
 def cleanup_containers(service_dir, environment):
     """Clean up containers and networks created by docker-compose."""
     try:
         env_file = f'.env.{environment}'
         project_name = f"{service_dir.stem}_{environment}"
+        
         logger.info(f"Cleaning up {environment} containers and networks...")
-        run_subprocess(
-            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', env_file, '-p', project_name, 'down', '--volumes', '--remove-orphans'])
+
+        subprocess.run(
+            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', env_file, '-p', project_name, 'down', '--volumes', '--remove-orphans'],
+            check=False, 
+            timeout=60
+        )
     except Exception as e:
         logger.error(f"Error during cleanup: {e}")
 
@@ -705,7 +719,8 @@ def check_tests_passed(test_directory, rollback=False):
     try:
         logger.info(f"Running tests from {test_directory}...")
         
-        result = run_subprocess(['pytest', test_directory, '--maxfail=1', '--disable-warnings', '-q'])
+        result = subprocess.run(['pytest', test_directory, '--maxfail=1', '--disable-warnings', '-q'],
+                                capture_output=True, text=True)
         
         if result.returncode == 0:
             logger.info("Tests passed successfully!")
@@ -726,13 +741,18 @@ def check_container_health(service_dir, retries=5, delay=10):
     """Check if all containers are healthy and running."""
     try:
         for _ in range(retries):
-            result = run_subprocess(
-                ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'ps'])
+            result = subprocess.run(
+                ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'ps'],
+                capture_output=True,
+                text=True,
+                check=True
+            )
             
             if 'Exit' in result.stdout:
                 logger.error("One or more containers have exited unexpectedly")
-                run_subprocess(
-                    ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'logs']
+                subprocess.run(
+                    ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'logs'],
+                    check=False
                 )
                 raise RuntimeError("Container startup failed")
             
@@ -784,9 +804,8 @@ def main(rollback=False):
         # Run tests
         logger.info("Running tests in the test environment...")
         logger.info("Running tests for billing service...")
-        # if not check_tests_passed(str(REPO_DIR / 'billing' / 'tests'), rollback):
-        #     raise RuntimeError("Tests failed in the billing service. Aborting pipeline.")
-        
+        if not check_tests_passed(str(REPO_DIR / 'billing' / 'tests'), rollback):
+            raise RuntimeError("Tests failed in the billing service. Aborting pipeline.")
         
         # Clean up test environment
         logger.info("Cleaning up test environment...")
@@ -797,8 +816,8 @@ def main(rollback=False):
         environment = 'prod' 
         load_environment('/app/.env.prod')
         logger.info("Deploying to production environment...")
-        build_and_deploy(REPO_DIR / 'weight', environment, 'weight')
         build_and_deploy(REPO_DIR / 'billing', environment, 'billing')
+        build_and_deploy(REPO_DIR / 'weight', environment, 'weight')
 
         # Check production health
         logger.info("Checking health of production containers...")
@@ -812,9 +831,10 @@ def main(rollback=False):
         if rollback: 
             logger.info("Tests passed. Pushing the rollback commit to GitHub...")
             GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
-            run_subprocess(
+            subprocess.run(
                 ['git', 'push', '--force', f'https://{GITHUB_TOKEN}@github.com/AM8151/gan-shmuel.git', 'master'],
-                cwd=REPO_DIR
+                cwd=REPO_DIR,
+                check=True
             )
             logger.info("Successfully pushed the rollback commit to GitHub.")
 
