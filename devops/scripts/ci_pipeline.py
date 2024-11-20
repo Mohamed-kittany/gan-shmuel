@@ -495,19 +495,6 @@ REPO_DIR = CURRENT_DIR / "gan-shmuel"  # Path to the cloned repository
 class CloneRepositoryError(Exception):
     pass
 
-
-
-def run_subprocess(command, cwd=None, timeout=300, capture_output=True, check=True):
-    """Run a subprocess command with error handling."""
-    try:
-        result = subprocess.run(command, cwd=cwd, timeout=timeout, capture_output=capture_output, text=True, check=check)
-        return result.stdout
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Command '{' '.join(command)}' failed: {e.stderr.strip()}")
-        raise
-    except subprocess.TimeoutExpired:
-        logger.error(f"Command '{' '.join(command)}' timed out.")
-        raise
 def check_container_running(container_name):
     """Check if a container with the given name is currently running."""
     try:
@@ -553,7 +540,7 @@ def assign_ports(service_type):
     
     available_ports = []
     for port in port_range:
-        result = subprocess.run(
+        result = run_subprocess(
             ['docker', 'ps', '--filter', f'publish={port}', '--format', '{{.Ports}}'],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
@@ -564,6 +551,18 @@ def assign_ports(service_type):
         raise RuntimeError(f"No available ports found for {service_type} service.")
     
     return random.choice(available_ports)
+
+def run_subprocess(command, cwd=None, timeout=300, capture_output=True, check=True):
+    """Run a subprocess command with error handling."""
+    try:
+        result = subprocess.run(command, cwd=cwd, timeout=timeout, capture_output=capture_output, text=True, check=check)
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Command '{' '.join(command)}' failed: {e.stderr.strip()}")
+        raise
+    except subprocess.TimeoutExpired:
+        logger.error(f"Command '{' '.join(command)}' timed out.")
+        raise
 
 def clone_or_update_repo():
     """Clone the repository or pull the latest changes."""
