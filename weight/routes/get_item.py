@@ -13,7 +13,7 @@ def get_item(id):
     cursor = db.cursor()
 
     # Check if the item exists in trucks
-    cursor.execute('SELECT truck, truckTara, id FROM transactions WHERE truck = %s AND datetime BETWEEN %s AND %s', (id, t1, t2))
+    cursor.execute('SELECT truck, truckTara, session_id FROM transactions WHERE truck = %s AND datetime BETWEEN %s AND %s', (id, t1, t2))
     truck_results = cursor.fetchall()
     if truck_results:
         tara = truck_results[-1][1]  # Last record's truckTara
