@@ -682,10 +682,10 @@ def build_and_deploy(service_dir, environment, service_type, other_service_dir=N
 
         # Build and start containers
         logger.info(f"Building Docker containers for {service_type} service...")
-        execute_docker_compose(['--quiet','build', '--no-cache'], service_dir, environment, service_type)
+        execute_docker_compose(['build', '--no-cache'], service_dir, environment, service_type)
 
         logger.info(f"Starting Docker containers for {service_type} service...")
-        execute_docker_compose(['--quiet','up', '-d'], service_dir, environment, service_type)
+        execute_docker_compose(['up', '-d'], service_dir, environment, service_type)
         
         # Check container health
         check_container_health(service_dir)
