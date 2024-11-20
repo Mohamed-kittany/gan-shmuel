@@ -69,12 +69,12 @@ def github_webhook():
             main()
             
             logger.info(f"CI pipeline executed successfully for commit by {author} to branch {branch_name}")
-            # send_email(
-            #     subject="CI Pipeline Success",
-            #     body=f"CI pipeline executed successfully on commit by {author}.\n\nCommit email: {commit_owner_email}",
-            #     cc_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"],
-            #     to_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"],
-            # )
+            send_email(
+                subject="CI Pipeline Success",
+                body=f"CI pipeline executed successfully on commit by {author}.\n\nCommit email: {commit_owner_email}",
+                cc_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"],
+                to_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"],
+            )
             
             return jsonify({
                 "status": "success",
@@ -88,12 +88,12 @@ def github_webhook():
             logger.error(f"CI pipeline failed: {e}")
             
             # Send failure email
-            # send_email(
-            #     subject="🚨 CI Pipeline Failed",
-            #     body=f"CI pipeline failed on commit by {author}.\n\nError: {str(e)}",
-            #     cc_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"],
-            #     to_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"],
-            # )
+            send_email(
+                subject="🚨 CI Pipeline Failed",
+                body=f"CI pipeline failed on commit by {author}.\n\nError: {str(e)}",
+                cc_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"],
+                to_addresses=["ayalm1357@gmail.com", "efratgefenjob@gmail.com","jacobelbz@gmail.com"],
+            )
             return jsonify({"status": "error", "message": str(e)}), 500
     except Exception as e:
         logger.error(f"Error processing webhook: {e}")
