@@ -1,4 +1,4 @@
-from billing import *
+from billing.tests import *
 ## to run a specific pytest use the following command: "pytest path_to_testFile::func_name"
 
 

@@ -1,5 +1,5 @@
 # /billing/app/tests/test_truck.py
-from billing import client
+from billing.tests import client
 
 def test_post_truck_success(client):
     """Test successful truck creation."""
