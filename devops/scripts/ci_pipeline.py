@@ -178,7 +178,7 @@ def build_and_deploy(service_dir, environment, service_type, other_service_dir=N
         # Only check existing containers if we're in production
         if environment == 'prod':
             backend_name = f"{service_type}_prod_backend"
-            db_name = f"{service_type}_prod_db"
+            db_name = f"{service_type}"
             
             backend_running = check_container_running(backend_name)
             db_running = check_container_running(db_name)
