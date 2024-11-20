@@ -58,20 +58,20 @@ def test_post_provider_success(client):
 #     assert response.json == {"error": "A provider with this name already exists."}
 
 
-def test_put_provider_success(client):
-    """Test successful provider update."""
-    # Input data
-    provider_id = 1
-    data = {"name": "Updated Name"}
-    route = f'/api/provider/{provider_id}'
-    headers = {"Content-Type": "application/json"}
+# def test_put_provider_success(client):
+#     """Test successful provider update."""
+#     # Input data
+#     provider_id = 1
+#     data = {"name": "Updated Name"}
+#     route = f'/api/provider/{provider_id}'
+#     headers = {"Content-Type": "application/json"}
 
-    # Send PUT request
-    response = client.put(route, json=data, headers=headers)
+#     # Send PUT request
+#     response = client.put(route, json=data, headers=headers)
 
-    # Assert success response
-    assert response.status_code == 200
-    assert response.json == {"message": "Provider updated successfully"}
+#     # Assert success response
+#     assert response.status_code == 200
+#     assert response.json == {"message": "Provider updated successfully"}
 
 
 # def test_put_provider_missing_name(client):

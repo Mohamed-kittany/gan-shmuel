@@ -555,30 +555,18 @@ def assign_ports(service_type):
     
     return random.choice(available_ports)
 
-def run_subprocess(command, cwd=None, timeout=300, capture_output=True, check=True):
-    """Run a subprocess command with error handling."""
-    try:
-        result = subprocess.run(command, cwd=cwd, timeout=timeout, capture_output=capture_output, text=True, check=check)
-        return result.stdout
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Command '{' '.join(command)}' failed: {e.stderr.strip()}")
-        raise
-    except subprocess.TimeoutExpired:
-        logger.error(f"Command '{' '.join(command)}' timed out.")
-        raise
-
 def clone_or_update_repo():
     """Clone the repository or pull the latest changes."""
     if not REPO_DIR.exists():
         logger.info("Cloning repository...")
         try:
-            run_subprocess(['git', 'clone', 'https://github.com/AM8151/gan-shmuel.git', str(REPO_DIR)])
+            subprocess.run(['git', 'clone', 'https://github.com/AM8151/gan-shmuel.git', str(REPO_DIR)])
         except Exception as e:
             raise CloneRepositoryError(f"Failed to clone repository: {e}")
     else:
         logger.info("Repository exists. Pulling latest changes...")
-        run_subprocess(['git', 'fetch'], cwd=REPO_DIR)
-        run_subprocess(['git', 'reset', '--hard', 'origin/master'], cwd=REPO_DIR)
+        subprocess.run(['git', 'fetch'], cwd=REPO_DIR)
+        subprocess.run(['git', 'reset', '--hard', 'origin/master'], cwd=REPO_DIR)
 
 def rollback_func():
     """Rollback to the previous commit in the repository."""
