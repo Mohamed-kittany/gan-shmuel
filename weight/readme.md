@@ -1,16 +1,16 @@
-your_project_directory/
-│
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-├── schema.sql
-├── app.py
-├── db.py
-├── routes/
-│   ├── post_weight.py
-│   ├── batch_weight.py
-│   ├── get_unknown.py
-│   ├── get_weights.py
-│   ├── get_item.py
-│   ├── get_session.py
-│   ├── health.py
+your_project_directory/ <br>
+│  <br>
+├── Dockerfile  <br>
+├── docker-compose.yml  <br>
+├── requirements.txt  <br>
+├── schema.sql  <br>
+├── app.py  <br>
+├── db.py  <br>
+├── routes/  <br>
+│   ├── post_weight.py  <br>
+│   ├── batch_weight.py  <br>
+│   ├── get_unknown.py  <br>
+│   ├── get_weights.py  <br>
+│   ├── get_item.py  <br>
+│   ├── get_session.py  <br>
+│   ├── health.py  <br>
