@@ -398,7 +398,7 @@ def main(rollback=False):
         # Reverse the rollback if it was done
         if rollback:
             reverse_hard_reset()
-        else rollback:
+        else:
             main(rollback=True)
         raise
 
