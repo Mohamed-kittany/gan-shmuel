@@ -5,11 +5,11 @@ FROM python:3.9-slim
 WORKDIR /app
 
 # Install Python dependencies
-COPY requirements.txt /app/
+COPY . .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY . /app/
+
 
 # Define the network port the container will listen on at runtime
 EXPOSE 8080
