@@ -32,7 +32,8 @@ def post_weight():
             return jsonify({"error": f"{direction} already exists for this truck"}), 400
         elif not result or result["direction"] != "in":
             return jsonify({"error": "No previous 'in' session for truck"}), 400
-        session_id= result["session_id"]
+        if not result:
+            session_id = result["session_id"]
 
     # Handle in condition
     if direction == 'in' and not force:
