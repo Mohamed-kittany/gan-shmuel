@@ -34,12 +34,11 @@ CREATE TABLE IF NOT EXISTS `transactions` (
   `containers` varchar(10000) DEFAULT NULL,
   `bruto` int(12) DEFAULT NULL,
   `truckTara` int(12) DEFAULT NULL,
-  --   "neto": <int> or "na" // na if some of containers unknown
   `neto` int(12) DEFAULT NULL,
   `produce` varchar(50) DEFAULT NULL,
-  `session_id` int(12) NOT NULL
+  `session_id` int(12) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=10001 ;
+) ENGINE=MyISAM AUTO_INCREMENT=10001;
 
 show tables;
 
