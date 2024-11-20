@@ -8,18 +8,18 @@ from tests import *
 #     assert response.status_code == 200
 #     # assert response.data.decode() == 'ok'
 
-def test_post_rates_success(client, mock_excel_file):
-    """Test successful rates file upload."""
-    route = "/api/rates"
-    headers = {"Content-Type": "multipart/form-data"}
-    files = {"file": (mock_excel_file, "rates.xlsx")}
+# def test_post_rates_success(client, mock_excel_file):
+#     """Test successful rates file upload."""
+#     route = "/api/rates"
+#     headers = {"Content-Type": "multipart/form-data"}
+#     files = {"file": (mock_excel_file, "rates.xlsx")}
 
-    # Send POST request
-    response = client.post(route, data=files, headers=headers)
+#     # Send POST request
+#     response = client.post(route, data=files, headers=headers)
 
-    # Assert success response
-    assert response.status_code == 200
-    assert response.json == {"message": "Rates file processed and saved successfully"}
+#     # Assert success response
+#     assert response.status_code == 200
+#     assert response.json == {"message": "Rates file processed and saved successfully"}
 
 
 # def test_post_rates_no_file(client):

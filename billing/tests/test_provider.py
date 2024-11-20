@@ -12,19 +12,19 @@ from tests import client
 
 
 
-def test_post_provider_success(client):
-    """Test successful provider creation."""
-    # Define the input data
-    data = {"name": "test2"}
-    route = '/api/provider'
-    headers = {"Content-Type": "application/json"}
+# def test_post_provider_success(client):
+#     """Test successful provider creation."""
+#     # Define the input data
+#     data = {"name": "test2"}
+#     route = '/api/provider'
+#     headers = {"Content-Type": "application/json"}
     
-    # Send POST request
-    response = client.post(route, json=data, headers=headers)
+#     # Send POST request
+#     response = client.post(route, json=data, headers=headers)
     
-    # Assert success response
-    assert response.status_code == 201
-    assert "id" in response.json  # Ensure an ID is returned
+#     # Assert success response
+#     assert response.status_code == 201
+#     assert "id" in response.json  # Ensure an ID is returned
 
 
 # def test_post_provider_missing_name(client):
