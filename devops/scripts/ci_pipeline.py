@@ -495,6 +495,19 @@ REPO_DIR = CURRENT_DIR / "gan-shmuel"  # Path to the cloned repository
 class CloneRepositoryError(Exception):
     pass
 
+
+
+def run_subprocess(command, cwd=None, timeout=300, capture_output=True, check=True):
+    """Run a subprocess command with error handling."""
+    try:
+        result = subprocess.run(command, cwd=cwd, timeout=timeout, capture_output=capture_output, text=True, check=check)
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Command '{' '.join(command)}' failed: {e.stderr.strip()}")
+        raise
+    except subprocess.TimeoutExpired:
+        logger.error(f"Command '{' '.join(command)}' timed out.")
+        raise
 def check_container_running(container_name):
     """Check if a container with the given name is currently running."""
     try:
@@ -517,11 +530,8 @@ def get_container_port(container_name, port_type):
         else:  # db
             port_pattern = "3000-3090"
             
-        result = subprocess.run(
-            ['docker', 'port', container_name],
-            capture_output=True,
-            text=True,
-            check=True
+        result = run_subprocess(
+            ['docker', 'port', container_name]
         )
         
         # Parse the port from the output
@@ -543,7 +553,7 @@ def assign_ports(service_type):
     
     available_ports = []
     for port in port_range:
-        result = subprocess.run(
+        result = run_subprocess(
             ['docker', 'ps', '--filter', f'publish={port}', '--format', '{{.Ports}}'],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
@@ -554,18 +564,6 @@ def assign_ports(service_type):
         raise RuntimeError(f"No available ports found for {service_type} service.")
     
     return random.choice(available_ports)
-
-def run_subprocess(command, cwd=None, timeout=300, capture_output=True, check=True):
-    """Run a subprocess command with error handling."""
-    try:
-        result = subprocess.run(command, cwd=cwd, timeout=timeout, capture_output=capture_output, text=True, check=check)
-        return result.stdout
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Command '{' '.join(command)}' failed: {e.stderr.strip()}")
-        raise
-    except subprocess.TimeoutExpired:
-        logger.error(f"Command '{' '.join(command)}' timed out.")
-        raise
 
 def clone_or_update_repo():
     """Clone the repository or pull the latest changes."""
@@ -585,12 +583,12 @@ def rollback_func():
     try:
         logger.info("Rolling back to the previous commit...")
         try:
-            subprocess.run(['git', 'checkout', 'master'], cwd=REPO_DIR, check=True, capture_output=True)
+            run_subprocess(['git', 'checkout', 'master'], cwd=REPO_DIR)
         except subprocess.CalledProcessError:
-            subprocess.run(['git', 'checkout', '-b', 'master', 'origin/master'], cwd=REPO_DIR, check=True)
+            run_subprocess(['git', 'checkout', '-b', 'master', 'origin/master'], cwd=REPO_DIR)
         
-        subprocess.run(['git', 'branch', '--set-upstream-to=origin/master', 'master'], cwd=REPO_DIR, check=True)
-        subprocess.run(['git', 'reset', '--hard', 'HEAD^'], cwd=REPO_DIR, check=True)
+        run_subprocess(['git', 'branch', '--set-upstream-to=origin/master', 'master'], cwd=REPO_DIR)
+        run_subprocess(['git', 'reset', '--hard', 'HEAD^'], cwd=REPO_DIR)
         logger.info("Successfully rolled back to the previous commit")
     except subprocess.CalledProcessError as e:
         logger.error(f"Failed to rollback to the previous commit: {e}")
@@ -599,18 +597,15 @@ def rollback_func():
 def rename_existing_container(service_name, container_name):
     """Renames an existing container if a conflict exists."""
     try:
-        result = subprocess.run(
-            ['docker', 'ps', '-a', '--filter', f'name={container_name}', '--format', '{{.Names}}'],
-            capture_output=True,
-            text=True,
-            check=True
+        result = run_subprocess(
+            ['docker', 'ps', '-a', '--filter', f'name={container_name}', '--format', '{{.Names}}']
         )
 
         if result.stdout.strip():
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
             new_name = f"{container_name}_{timestamp}"
             logger.info(f"Renaming existing container '{container_name}' for service '{service_name}' to '{new_name}'...")
-            subprocess.run(['docker', 'rename', result.stdout.strip(), new_name], check=True)
+            run_subprocess(['docker', 'rename', result.stdout.strip(), new_name])
             logger.info(f"Successfully renamed container '{container_name}' to '{new_name}'")
     except subprocess.CalledProcessError as e:
         logger.error(f"Error while renaming container: {e}")
@@ -623,25 +618,17 @@ def execute_docker_compose(commands, service_dir, environment, service_type):
     
     logger.info(f"Running: docker-compose -f {str(service_dir / 'docker-compose.yml')} --env-file {env_file} {' '.join(commands)}")
     
-    subprocess.run(
-        ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', env_file, '-p', project_name] + commands,
-        check=True,
-        timeout=300
-    )
+    run_subprocess(
+        ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', env_file, '-p', project_name] + commands)
 
 def cleanup_containers(service_dir, environment):
     """Clean up containers and networks created by docker-compose."""
     try:
         env_file = f'.env.{environment}'
         project_name = f"{service_dir.stem}_{environment}"
-        
         logger.info(f"Cleaning up {environment} containers and networks...")
-
-        subprocess.run(
-            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', env_file, '-p', project_name, 'down', '--volumes', '--remove-orphans'],
-            check=False, 
-            timeout=60
-        )
+        run_subprocess(
+            ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), '--env-file', env_file, '-p', project_name, 'down', '--volumes', '--remove-orphans'])
     except Exception as e:
         logger.error(f"Error during cleanup: {e}")
 
@@ -695,10 +682,10 @@ def build_and_deploy(service_dir, environment, service_type, other_service_dir=N
 
         # Build and start containers
         logger.info(f"Building Docker containers for {service_type} service...")
-        execute_docker_compose(['build', '--no-cache'], service_dir, environment, service_type)
+        execute_docker_compose(['--quiet','build', '--no-cache'], service_dir, environment, service_type)
 
         logger.info(f"Starting Docker containers for {service_type} service...")
-        execute_docker_compose(['up', '-d'], service_dir, environment, service_type)
+        execute_docker_compose(['--quiet','up', '-d'], service_dir, environment, service_type)
         
         # Check container health
         check_container_health(service_dir)
@@ -719,8 +706,7 @@ def check_tests_passed(test_directory, rollback=False):
     try:
         logger.info(f"Running tests from {test_directory}...")
         
-        result = subprocess.run(['pytest', test_directory, '--maxfail=1', '--disable-warnings', '-q'],
-                                capture_output=True, text=True)
+        result = run_subprocess(['pytest', test_directory, '--maxfail=1', '--disable-warnings', '-q'])
         
         if result.returncode == 0:
             logger.info("Tests passed successfully!")
@@ -741,18 +727,13 @@ def check_container_health(service_dir, retries=5, delay=10):
     """Check if all containers are healthy and running."""
     try:
         for _ in range(retries):
-            result = subprocess.run(
-                ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'ps'],
-                capture_output=True,
-                text=True,
-                check=True
-            )
+            result = run_subprocess(
+                ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'ps'])
             
             if 'Exit' in result.stdout:
                 logger.error("One or more containers have exited unexpectedly")
-                subprocess.run(
-                    ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'logs'],
-                    check=False
+                run_subprocess(
+                    ['docker-compose', '-f', str(service_dir / 'docker-compose.yml'), 'logs']
                 )
                 raise RuntimeError("Container startup failed")
             
@@ -832,10 +813,9 @@ def main(rollback=False):
         if rollback: 
             logger.info("Tests passed. Pushing the rollback commit to GitHub...")
             GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
-            subprocess.run(
+            run_subprocess(
                 ['git', 'push', '--force', f'https://{GITHUB_TOKEN}@github.com/AM8151/gan-shmuel.git', 'master'],
-                cwd=REPO_DIR,
-                check=True
+                cwd=REPO_DIR
             )
             logger.info("Successfully pushed the rollback commit to GitHub.")
 
