@@ -27,7 +27,7 @@ def get_item(id):
         return jsonify({"error": "Item not found"}), 404
 
     tara = result[0] if result[0] else 'na'
-    cursor.execute('SELECT id FROM transactions WHERE FIND_IN_SET(%s, containers) AND datetime BETWEEN %s AND %s', (id, t1, t2))
+    cursor.execute('SELECT session_id FROM transactions WHERE FIND_IN_SET(%s, containers) AND datetime BETWEEN %s AND %s', (id, t1, t2))
     container_sessions = cursor.fetchall()
     sessions = [row[0] for row in container_sessions]
 
