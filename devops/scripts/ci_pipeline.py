@@ -206,33 +206,33 @@ def build_and_deploy(service_dir, environment, service_type, other_service_dir=N
         need_port_update = False
         
         # Only check existing containers if we're in production
-        if environment == 'prod':
-            backend_name = f"{service_type}_prod_backend"
-            db_name = f"{service_type}"
+        # if environment == 'prod':
+        #     backend_name = f"{service_type}_prod_backend"
+        #     db_name = f"{service_type}"
             
-            backend_running = check_container_running(backend_name)
-            db_running = check_container_running(db_name)
+        #     backend_running = check_container_running(backend_name)
+        #     db_running = check_container_running(db_name)
             
-            if backend_running or db_running:
-                need_port_update = True
-                # Get current ports if containers are running
-                if backend_running:
-                    backend_port = get_container_port(backend_name, "backend")
-                    rename_existing_container(service_type, backend_name)
+        #     if backend_running or db_running:
+        #         need_port_update = True
+        #         # Get current ports if containers are running
+        #         if backend_running:
+        #             backend_port = get_container_port(backend_name, "backend")
+        #             rename_existing_container(service_type, backend_name)
                 
-                if db_running:
-                    db_port = get_container_port(db_name, "db")
-                    rename_existing_container(service_type, db_name)
+        #         if db_running:
+        #             db_port = get_container_port(db_name, "db")
+        #             rename_existing_container(service_type, db_name)
         
         # Assign new ports only if needed
-        if not backend_port:
-            backend_port = assign_ports(service_type="backend")
-        if not db_port:
-            db_port = assign_ports(service_type="db")
+        # if not backend_port:
+        #     backend_port = assign_ports(service_type="backend")
+        # if not db_port:
+        #     db_port = assign_ports(service_type="db")
             
         # Update environment file only if ports changed
-        if need_port_update:
-            update_env_file(service_dir, service_type, backend_port, db_port, environment)
+        # if need_port_update:
+        #     update_env_file(service_dir, service_type, backend_port, db_port, environment)
 
         # Build and start containers
         logger.info(f"Building Docker containers for {service_type} service...")
