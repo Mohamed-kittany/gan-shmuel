@@ -553,7 +553,7 @@ def assign_ports(service_type):
     
     available_ports = []
     for port in port_range:
-        result = run_subprocess(
+        result = subprocess.run(
             ['docker', 'ps', '--filter', f'publish={port}', '--format', '{{.Ports}}'],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
