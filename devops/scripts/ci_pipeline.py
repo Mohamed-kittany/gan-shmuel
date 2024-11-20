@@ -832,8 +832,8 @@ def main(rollback=False):
     except Exception as e:
         logger.error(f"CI pipeline failed for one or both services: {e}")
         # Ensure cleanup in case of failure
-        cleanup_containers(REPO_DIR / 'billing')
-        cleanup_containers(REPO_DIR / 'weight')
+        cleanup_containers(REPO_DIR / 'billing',environment)
+        cleanup_containers(REPO_DIR / 'weight',environment)
         if not rollback:
             main(rollback=True)
         raise

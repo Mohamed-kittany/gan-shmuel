@@ -67,21 +67,7 @@ def github_webhook():
         try:
             
             main()
-            # Set environment variable to control which .env file to load
-             # Trigger the pipeline for the test environment
             
-            # Run tests after deploying to the test environment
-            # if not check_tests_passed():
-            #     raise Exception("Tests failed in the test environment")
-
-            # Clean up the test environment after successful tests
-            # cleanup_test_environment()
-            
-            # Now that tests passed, proceed to deploy to production
-            # os.environ['ENV'] = 'prod'  # Switch environment to production
-            # main()
-            
-            # Log success and send success email
             logger.info(f"CI pipeline executed successfully for commit by {author} to branch {branch_name}")
             # send_email(
             #     subject="CI Pipeline Success",
