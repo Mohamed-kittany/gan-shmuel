@@ -14,7 +14,7 @@ class HealthService:
             conn = get_mysql_connection()
             conn.cursor().execute("SELECT 1")
             self.logger.info("Health check passed: Database connection successful.")
-            return {"status": "OK :)!"}, 200
+            return {"status": "OK :)!!"}, 200
         except Exception as e:
             self.logger.error(f"Health check failed: {e}")
             return {"status": "Failure"}, 500
