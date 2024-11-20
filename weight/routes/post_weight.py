@@ -21,26 +21,30 @@ def post_weight():
     session_id = str(int(datetime.datetime.now().timestamp()))
     cursor.execute('SELECT direction, session_id FROM transactions WHERE truck = %s ORDER BY datetime DESC LIMIT 1', (truck,))
     result =  cursor.fetchone()
-    print(result)
+    # when there is no prev rows of this truck
+    if not result:
+        cursor.execute('INSERT INTO transactions (datetime, direction, truck, containers, bruto, produce, session_id) VALUES (%s, %s, %s, %s, %s, %s, %s)', \
+            (datetime.datetime.now(), direction, truck, containers, weight, produce, session_id))
+        
     # Handle out condition
     if direction == 'out' and not force:
-        if result["direction"] == "out":
+        if not result or result["direction"] == "out":
             return jsonify({"error": f"{direction} already exists for this truck"}), 400
-        elif result["direction"] != "in":
+        elif not result or result["direction"] != "in":
             return jsonify({"error": "No previous 'in' session for truck"}), 400
         session_id= result["session_id"]
 
     # Handle in condition
     if direction == 'in' and not force:
-        if result["direction"] == "in":
+        if not result or result["direction"] == "in":
             return jsonify({"error": f"{direction} already exists for this truck"}), 400
 
     # Handle none condition
     if direction == "none":
-        if result["direction"] == "in":
+        if not result or result["direction"] == "in":
             return jsonify({"error": f"{direction} exists for this truck, you can not use none direction"}), 400
 
-    if force == True and direction == result["direction"]:
+    if force == True and (not result or direction == result["direction"]):
         cursor.execute(
             "UPDATE transactions SET datetime = %s, containers = '%s', bruto = '%s', produce = '%s' WHERE truck = %s AND session_id = %s and direction = %s;",
             (datetime.datetime.now(), containers, weight, produce, truck, session_id, direction)
