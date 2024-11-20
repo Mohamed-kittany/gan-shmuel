@@ -18,8 +18,8 @@ class SplunkHttpHandler(HTTPHandler):
         log_entry = self.format(record)
         payload = {
             "event": log_entry,
-            "sourcetype": "docker",  # You can adjust this for your use case
-            "index": "main",        # Adjust the index as needed
+            "sourcetype": "docker",  
+            "index": "main",       
         }
 
         headers = {
