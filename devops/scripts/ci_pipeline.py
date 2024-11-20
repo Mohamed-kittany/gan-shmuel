@@ -309,7 +309,9 @@ def main(rollback=False):
             rollback_func()
         load_environment('/app/.env.test')
     
-
+        cleanup_containers(REPO_DIR / 'billing', environment)
+        cleanup_containers(REPO_DIR / 'weight', environment)
+        
         # Build and deploy test environment
         build_and_deploy(REPO_DIR / 'billing', environment, 'billing')
         build_and_deploy(REPO_DIR / 'weight', environment, 'weight', other_service_dir=REPO_DIR / 'billing')
