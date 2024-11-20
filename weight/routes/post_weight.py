@@ -28,24 +28,24 @@ def post_weight():
         
     # Handle out condition
     if direction == 'out':
-        if not result or result[2] == "out":
+        if result and result[2] == "out":
             return jsonify({"error": f"{direction} already exists for this truck"}), 400
-        elif not result or result[2] != "in":
+        elif result and result[2] != "in":
             return jsonify({"error": "No previous 'in' session for truck"}), 400
-        if not result:
+        if result:
             session_id = result[9]
 
     # Handle in condition
     if direction == 'in':
-        if not result or result[2] == "in":
+        if result and result[2] == "in":
             return jsonify({"error": f"{direction} already exists for this truck"}), 400
 
     # Handle none condition
     if direction == "none":
-        if not result or result[2] == "in":
+        if result and result[2] == "in":
             return jsonify({"error": f"{direction} exists for this truck, you can not use none direction"}), 400
 
-    if force == True and (not result or direction == result[2]):
+    if force == True and (result and direction == result[2]):
         cursor.execute(
             "UPDATE transactions SET datetime = %s, containers = '%s', bruto = '%s', produce = '%s' WHERE truck = %s AND session_id = %s and direction = %s;",
             (datetime.datetime.now(), containers, weight, produce, truck, session_id, direction)
