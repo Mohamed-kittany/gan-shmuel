@@ -1,7 +1,3 @@
-Here’s a clean and professional version of what to put in your GitHub repository's README file:
-
----
-
 # **Gan Shmuel Project**
 
 Welcome to **Gan Shmuel** – a robust and scalable system designed to manage critical operations like truck weighing, provider billing, and continuous integration for agricultural workflows.
